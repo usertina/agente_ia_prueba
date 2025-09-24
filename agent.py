@@ -38,13 +38,27 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "algoritmo", "clase", "app", "aplicación", "aplicacion"
     ]
 
-    # Palabras clave de notificaciones
+    # Palabras clave de notificaciones (completa)
     notification_keywords = [
+        # Comandos de listado
+        "listar", "listar 10", "listar 20", "listar papers", "listar patentes", "listar patents",
+        "ver", "mostrar", "ver recientes", "últimas", "últimos", "recientes",
+        # Comandos de gestión
+        "resumen", "desglose", "borrar", "eliminar", "borrar papers", "eliminar papers",
+        "borrar todo", "eliminar todo", "limpiar", "reset", "clear",
+        # Tipos de notificación
+        "papers", "patentes", "emails", "notificaciones", "tipo", "tipos",
+        # Identificadores y referencias
+        "ID", "id", "identificador", "ref", "referencia",
+        # Acciones generales
+        "gestionar", "administrar", "control", "verificar", "consultar",
+        # Otros términos relacionados
         "notificacion", "notificación", "alerta", "avisar", "aviso",
-        "email", "correo", "patente", "paper", "papers", "científico",
+        "email", "correo", "patente", "paper", "científico",
         "monitoreo", "notificar", "activar", "keywords", "categories",
         "status", "estado", "test", "probar"
     ]
+
 
     # Palabras clave de documentos
     document_keywords = [

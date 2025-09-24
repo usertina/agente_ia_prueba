@@ -280,86 +280,147 @@
 
     </div>
 
-    <!-- Modal para el manual de uso -->
-    <div id="guide-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Guía de Uso del Agente</h2>
-                <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+    <!-- Modal Unificada de Guía y Palabras Clave -->
+<div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso y Palabras Clave del Agente</h2>
+            <button id="close-guide-keywords-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-4">
+            <button class="tab-button px-4 py-2 bg-blue-100 dark:bg-blue-700 rounded-l-xl focus:outline-none" data-tab="tools">Herramientas</button>
+            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-r-xl focus:outline-none" data-tab="keywords">Palabras Clave</button>
+        </div>
+
+        <!-- Contenido de Tabs -->
+        <div id="tab-tools" class="tab-content">
+            <!-- Note -->
+            <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl mb-4">
+                <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Note (Notas)</h3>
+                <p class="mt-2">Maneja tus notas personales. Se guardan automáticamente con fecha y hora.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Guardar nota:</strong> <code>guardar: tu nota aquí</code></li>
+                    <li><strong>Ver todas:</strong> <code>leer</code></li>
+                    <li><strong>Buscar:</strong> <code>buscar: término</code></li>
+                    <li><strong>Contar:</strong> <code>contar</code></li>
+                    <li><strong>Borrar todas:</strong> <code>borrar</code></li>
+                    <li><strong>Descargar:</strong> <code>descargar</code></li>
+                </ul>
             </div>
-            
-            <div class="space-y-6 text-gray-700 dark:text-gray-300">
-                <p>El Agente Gemini tiene un conjunto de herramientas para ayudarte con diferentes tareas. Aquí están los comandos para cada una.</p>
-                
-                <!-- Note -->
-                <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl">
-                    <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Note (Notas)</h3>
-                    <p class="mt-2">Maneja tus notas personales. Se guardan automáticamente con fecha y hora.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Para guardar una nota:</strong> <code>guardar: tu nota aquí</code></li>
-                        <li><strong>Para ver todas las notas:</strong> <code>leer</code></li>
-                        <li><strong>Para buscar en las notas:</strong> <code>buscar: término</code></li>
-                        <li><strong>Para contar las notas:</strong> <code>contar</code></li>
-                        <li><strong>Para borrar todas las notas:</strong> <code>borrar</code></li>
-                        <li><strong>Para descargar las notas:</strong> <code>descargar</code></li>
-                    </ul>
-                </div>
-                
-                <!-- Save Code -->
-                <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl">
-                    <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Save Code (Guardar Código)</h3>
-                    <p class="mt-2">Guarda snippets de código en la carpeta de archivos.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Formato:</strong> <code>nombre_archivo||contenido_del_codigo</code></li>
-                        <li><strong>Ejemplo:</strong> <code>script.py||print("Hola Mundo")</code></li>
-                    </ul>
-                </div>
 
-                <!-- Code Gen -->
-                <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl">
-                    <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">⚙️ Code Gen (Generar Código)</h3>
-                    <p class="mt-2">Genera código automáticamente usando IA y lo guarda automáticamente.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Formato básico:</strong> <code>generar: un script en Python que diga hola mundo</code></li>
-                        <li><strong>Con nombre personalizado:</strong> <code>mi_script.py||generar un script que haga una calculadora</code></li>
-                        <li><strong>Solo descripción:</strong> <code>crear una función que sume números</code></li>
-                    </ul>
-                </div>
+            <!-- Save Code -->
+            <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl mb-4">
+                <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Save Code (Guardar Código)</h3>
+                <p class="mt-2">Guarda snippets de código en la carpeta de archivos.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Formato:</strong> <code>nombre_archivo||contenido_del_codigo</code></li>
+                    <li><strong>Ejemplo:</strong> <code>script.py||print("Hola Mundo")</code></li>
+                    <li><strong>Otro ejemplo:</strong> <code>calculadora.py||def suma(a,b): return a+b</code></li>
+                </ul>
+            </div>
 
-                <!-- Calculator -->
-                <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl">
-                    <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧮 Calculator (Calculadora)</h3>
-                    <p class="mt-2">Evalúa expresiones matemáticas complejas.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Ejemplo:</strong> <code>2 + 2 * (3 - 1)</code> devuelve <code>6</code></li>
-                        <li><strong>Otro ejemplo:</strong> <code>(100 / 2) ** 2</code> devuelve <code>2500.0</code></li>
-                    </ul>
-                </div>
-                
-                <!-- Web Search -->
-                <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl">
-                    <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Web Search (Búsqueda en la web)</h3>
-                    <p class="mt-2">Busca en internet y devuelve los 5 primeros resultados.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Ejemplo:</strong> <code>buscar noticias de inteligencia artificial</code></li>
-                    </ul>
-                </div>
+            <!-- Code Gen -->
+            <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl mb-4">
+                <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">⚙️ Code Gen (Generar Código)</h3>
+                <p class="mt-2">Genera código automáticamente usando IA y lo guarda automáticamente.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Formato básico:</strong> <code>generar: un script en Python que diga hola mundo</code></li>
+                    <li><strong>Con nombre personalizado:</strong> <code>mi_script.py||generar un script que haga una calculadora</code></li>
+                    <li><strong>Solo descripción:</strong> <code>crear una función que sume números</code></li>
+                </ul>
+            </div>
 
-                <!-- Web Open -->
-                <div class="p-4 bg-red-100 dark:bg-red-800 rounded-xl">
-                    <h3 class="font-bold text-red-800 dark:text-red-100 text-lg">🌐 Web Open (Abrir Enlaces)</h3>
-                    <p class="mt-2">Abre una URL directamente en tu navegador.</p>
-                    <ul class="mt-2 list-disc list-inside text-sm">
-                        <li><strong>Ejemplo:</strong> <code>https://www.wikipedia.org</code></li>
-                        <li><strong>También:</strong> <code>wikipedia.org</code> (agrega https automáticamente)</li>
-                    </ul>
-                </div>
+            <!-- Calculator -->
+            <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl mb-4">
+                <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧮 Calculator (Calculadora)</h3>
+                <p class="mt-2">Evalúa expresiones matemáticas complejas.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Ejemplo:</strong> <code>2 + 2 * (3 - 1)</code> devuelve <code>6</code></li>
+                    <li><strong>Otro ejemplo:</strong> <code>(100 / 2) ** 2</code> devuelve <code>2500.0</code></li>
+                </ul>
+            </div>
+
+            <!-- Web Search -->
+            <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl mb-4">
+                <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Web Search (Búsqueda en la web)</h3>
+                <p class="mt-2">Busca en internet y devuelve los 5 primeros resultados.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Ejemplo:</strong> <code>buscar noticias de inteligencia artificial</code></li>
+                    <li><strong>Otro ejemplo:</strong> <code>buscar patentes sobre energía solar</code></li>
+                </ul>
+            </div>
+
+            <!-- Web Open -->
+            <div class="p-4 bg-red-100 dark:bg-red-800 rounded-xl mb-4">
+                <h3 class="font-bold text-red-800 dark:text-red-100 text-lg">🌐 Web Open (Abrir Enlaces)</h3>
+                <p class="mt-2">Abre una URL directamente en tu navegador.</p>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Ejemplo:</strong> <code>https://www.wikipedia.org</code></li>
+                    <li><strong>Otro ejemplo:</strong> <code>wikipedia.org</code> (agrega https automáticamente)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-keywords" class="tab-content hidden">
+            <!-- Código -->
+            <div class="mb-4">
+                <h3 class="font-semibold text-blue-700 dark:text-blue-300">💻 Generación de Código</h3>
+                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
+                    generar, genera, crear, crea, escribir, escribe, codigo, código, script, programa, función, funcion, algoritmo, clase, app, aplicación, aplicacion
+                </p>
+            </div>
+
+            <!-- Notificaciones -->
+            <div class="mb-4">
+                <h3 class="font-semibold text-green-700 dark:text-green-300">🔔 Notificaciones</h3>
+                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
+                    listar, listar 10, listar 20, listar papers, listar patentes, listar patents, ver, mostrar, ver recientes, últimas, últimos, recientes, resumen, desglose, borrar, eliminar, borrar papers, eliminar papers, borrar todo, eliminar todo, limpiar, reset, clear, papers, patentes, emails, notificaciones, tipo, tipos, ID, id, identificador, ref, referencia, gestionar, administrar, control, verificar, consultar, notificacion, notificación, alerta, avisar, aviso, email, correo, patente, paper, científico, monitoreo, notificar, activar, keywords, categories, status, estado, test, probar
+                </p>
+            </div>
+
+            <!-- Documentos -->
+            <div class="mb-4">
+                <h3 class="font-semibold text-purple-700 dark:text-purple-300">📄 Documentos</h3>
+                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
+                    plantilla, rellenar, documento, formulario, listar plantillas, listar datos, analizar, crear ejemplo, ayuda, subvencion, subvención, document_filler, plantillas, datos, rellenar:
+                </p>
             </div>
         </div>
     </div>
+</div>
+
+<script>
+    const guideKeywordsModal = document.getElementById("guide-keywords-modal");
+    const guideButton = document.getElementById("guide-button");
+    const closeGuideKeywordsButton = document.getElementById("close-guide-keywords-modal");
+
+    guideButton.addEventListener("click", () => guideKeywordsModal.classList.remove("hidden"));
+    closeGuideKeywordsButton.addEventListener("click", () => guideKeywordsModal.classList.add("hidden"));
+    guideKeywordsModal.addEventListener("click", (e) => {
+        if(e.target === guideKeywordsModal) guideKeywordsModal.classList.add("hidden");
+    });
+
+    // Tabs
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+    tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tabContents.forEach(tc => tc.classList.add("hidden"));
+            tabButtons.forEach(b => b.classList.remove("bg-blue-100","dark:bg-blue-700"));
+            tabButtons.forEach(b => b.classList.add("bg-gray-100","dark:bg-gray-600"));
+            document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+            btn.classList.remove("bg-gray-100","dark:bg-gray-600");
+            btn.classList.add("bg-blue-100","dark:bg-blue-700");
+        });
+    });
+</script>
 
     <script src="/static/script.js"></script>
     <script type="module" src="/static/js/document.js"></script>

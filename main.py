@@ -762,7 +762,7 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT",8080 ))
     host = "0.0.0.0"  # Importante para Render
     
     print(f"🚀 Iniciando servidor en {host}:{port}")
