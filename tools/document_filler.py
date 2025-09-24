@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from docx import Document
 import PyPDF2
-from docx2pdf import convert
+# Removemos docx2pdf que causa problemas en Render
+# import docx2pdf  # ← Esta línea causa el error
 import mammoth
 import pandas as pd
 from pathlib import Path
@@ -68,7 +69,6 @@ class DocumentFiller:
         else:
             return self.show_help()
 
-
     def convert_to_json(self, filename: str) -> str:
         """
         Convierte archivos CSV, XLSX, TXT o DOCX a JSON en data_docs.
@@ -106,23 +106,26 @@ class DocumentFiller:
                             data[key.strip()] = value.strip()
 
             elif filename.endswith('.docx'):
-                doc = Document(path)
-                text_content = []
-                for paragraph in doc.paragraphs:
-                    text_content.append(paragraph.text)
-                full_text = "\n".join(text_content)
+                try:
+                    doc = Document(path)
+                    text_content = []
+                    for paragraph in doc.paragraphs:
+                        text_content.append(paragraph.text)
+                    full_text = "\n".join(text_content)
 
-                import re
-                # Buscar patrones clave=valor o clave: valor
-                for match in re.findall(r'(\w+)\s*[:=]\s*(.+)', full_text):
-                    key, value = match
-                    data[key.strip()] = value.strip()
+                    import re
+                    # Buscar patrones clave=valor o clave: valor
+                    for match in re.findall(r'(\w+)\s*[:=]\s*(.+)', full_text):
+                        key, value = match
+                        data[key.strip()] = value.strip()
 
-                # También extraer marcadores {{campo}} y crear placeholders si no hay valor
-                marcadores = re.findall(r'\{\{(\w+)\}\}', full_text)
-                for marcador in marcadores:
-                    if marcador not in data:
-                        data[marcador] = f"[COMPLETAR_{marcador.upper()}]"
+                    # También extraer marcadores {{campo}} y crear placeholders si no hay valor
+                    marcadores = re.findall(r'\{\{(\w+)\}\}', full_text)
+                    for marcador in marcadores:
+                        if marcador not in data:
+                            data[marcador] = f"[COMPLETAR_{marcador.upper()}]"
+                except Exception as docx_error:
+                    return f"❌ Error procesando archivo DOCX: {docx_error}"
 
         except Exception as e:
             return f"❌ Error procesando el archivo: {e}"
@@ -155,28 +158,25 @@ class DocumentFiller:
    • listar plantillas
    • listar datos
    • usar plantilla: nombre_archivo
-    - Copia una plantilla
-      predeterminada a tus plantillas
-
+     - Copia una plantilla predeterminada a tus plantillas
+   • convertir a json: archivo.csv
+     - Convierte CSV/XLSX/TXT a JSON para usar como datos
 
 2️⃣ **Análisis de plantillas:**
    • analizar: plantilla.docx
-     - Detecta los campos a rellenar 
-       en una plantilla
+     - Detecta los campos a rellenar en una plantilla
    • crear ejemplo datos: plantilla.docx 
-   - Genera un archivo JSON de ejemplo con los campos
-
+     - Genera un archivo JSON de ejemplo con los campos
 
 3️⃣ **Rellenado de documentos:**
    • rellenar: plantilla.docx con datos.json 
-    - Rellena una plantilla con los datos
+     - Rellena una plantilla con los datos
    • rellenar: solicitud_ayuda.docx con empresa_datos.json
-    - También funciona con CSV o XLSX
+     - También funciona con CSV o XLSX
 
 **📁 Estructura de carpetas:**
-   • templates_docs/ - Coloca aquí tus plantillas
-     (.docx, .txt, .pdf)
-   • templates_docs/defaults/ - Plantillas predeterminadas que puedes copiar con 'usar plantilla:
+   • templates_docs/ - Coloca aquí tus plantillas (.docx, .txt, .pdf)
+   • templates_docs/defaults/ - Plantillas predeterminadas que puedes copiar
    • data_docs/ - Coloca aquí tus datos (.json, .csv, .xlsx)
    • output_docs/ - Los documentos rellenados se guardan aquí
 
@@ -197,18 +197,29 @@ class DocumentFiller:
    • Contratos repetitivos
    • Formularios oficiales
    • Documentación empresarial
+
+**⚠️ Nota sobre conversión a PDF:**
+   La conversión automática a PDF no está disponible en este entorno.
+   Puedes descargar los archivos .docx y convertirlos manualmente.
         """
 
     def copy_default_template(self, filename: str) -> str:
-        src = os.path.join(TEMPLATES_DIR, "defaults", filename)
+        """Copia una plantilla predeterminada a las plantillas del usuario"""
+        defaults_dir = os.path.join(TEMPLATES_DIR, "defaults")
+        src = os.path.join(defaults_dir, filename)
         dst = os.path.join(TEMPLATES_DIR, filename)
+        
         if not os.path.exists(src):
             return f"❌ La plantilla {filename} no existe en defaults"
-        if not os.path.exists(dst):
+        if os.path.exists(dst):
+            return f"⚠️ Plantilla {filename} ya existe en tus plantillas"
+        
+        try:
             import shutil
             shutil.copy(src, dst)
             return f"✅ Plantilla {filename} copiada a tus plantillas"
-        return f"⚠️ Plantilla {filename} ya existe en tus plantillas"
+        except Exception as e:
+            return f"❌ Error copiando plantilla: {e}"
 
     def list_templates(self) -> str:
         """Lista las plantillas disponibles, incluyendo las predeterminadas"""
@@ -216,67 +227,77 @@ class DocumentFiller:
             templates = []
 
             # Plantillas subidas por el usuario
-            for file in os.listdir(TEMPLATES_DIR):
-                file_path = os.path.join(TEMPLATES_DIR, file)
-                if os.path.isfile(file_path) and any(
-                        file.endswith(ext)
-                        for ext in self.supported_template_formats):
-                    size = os.path.getsize(file_path)
-                    modified = datetime.fromtimestamp(
-                        os.path.getmtime(file_path))
-                    templates.append({
-                        'name':
-                        file,
-                        'size':
-                        f"{size/1024:.1f} KB",
-                        'modified':
-                        modified.strftime("%Y-%m-%d %H:%M"),
-                        'is_default':
-                        False
-                    })
+            if os.path.exists(TEMPLATES_DIR):
+                for file in os.listdir(TEMPLATES_DIR):
+                    file_path = os.path.join(TEMPLATES_DIR, file)
+                    if (os.path.isfile(file_path) and 
+                        any(file.endswith(ext) for ext in self.supported_template_formats) and
+                        file != "defaults"):  # Excluir carpeta defaults
+                        try:
+                            size = os.path.getsize(file_path)
+                            modified = datetime.fromtimestamp(os.path.getmtime(file_path))
+                            templates.append({
+                                'name': file,
+                                'size': f"{size/1024:.1f} KB",
+                                'modified': modified.strftime("%Y-%m-%d %H:%M"),
+                                'is_default': False
+                            })
+                        except Exception as e:
+                            # Si hay error obteniendo info del archivo, lo saltamos
+                            continue
 
             # Plantillas predeterminadas
             defaults_dir = os.path.join(TEMPLATES_DIR, "defaults")
             if os.path.exists(defaults_dir):
                 for file in os.listdir(defaults_dir):
                     file_path = os.path.join(defaults_dir, file)
-                    if os.path.isfile(file_path) and any(
-                            file.endswith(ext)
-                            for ext in self.supported_template_formats):
-                        size = os.path.getsize(file_path)
-                        modified = datetime.fromtimestamp(
-                            os.path.getmtime(file_path))
-                        templates.append({
-                            'name':
-                            file,
-                            'size':
-                            f"{size/1024:.1f} KB",
-                            'modified':
-                            modified.strftime("%Y-%m-%d %H:%M"),
-                            'is_default':
-                            True
-                        })
+                    if (os.path.isfile(file_path) and 
+                        any(file.endswith(ext) for ext in self.supported_template_formats)):
+                        try:
+                            size = os.path.getsize(file_path)
+                            modified = datetime.fromtimestamp(os.path.getmtime(file_path))
+                            templates.append({
+                                'name': file,
+                                'size': f"{size/1024:.1f} KB",
+                                'modified': modified.strftime("%Y-%m-%d %H:%M"),
+                                'is_default': True
+                            })
+                        except Exception as e:
+                            continue
 
             if not templates:
                 return f"""
-    📁 **No hay plantillas disponibles**
+📁 **No hay plantillas disponibles**
 
-    Para empezar:
-    1. Coloca tus archivos plantilla en: {TEMPLATES_DIR}/
-    2. Formatos soportados: {', '.join(self.supported_template_formats)}
-    3. Usa marcadores como {{{{nombre}}}}, {{{{empresa}}}} en tus plantillas
+Para empezar:
+1. Coloca tus archivos plantilla en: {TEMPLATES_DIR}/
+2. Formatos soportados: {', '.join(self.supported_template_formats)}
+3. Usa marcadores como {{{{nombre}}}}, {{{{empresa}}}} en tus plantillas
                 """
 
             # Generar listado en texto
             result = "📄 **PLANTILLAS DISPONIBLES:**\n\n"
-            for i, template in enumerate(templates, 1):
-                result += f"{i}. **{template['name']}**"
-                if template['is_default']:
-                    result += " (Predeterminada)"
-                result += f"\n   📊 Tamaño: {template['size']}\n"
-                result += f"   📅 Modificado: {template['modified']}\n\n"
+            
+            # Separar por tipo
+            user_templates = [t for t in templates if not t['is_default']]
+            default_templates = [t for t in templates if t['is_default']]
+            
+            if user_templates:
+                result += "👤 **Tus plantillas:**\n"
+                for i, template in enumerate(user_templates, 1):
+                    result += f"{i}. **{template['name']}**\n"
+                    result += f"   📊 Tamaño: {template['size']}\n"
+                    result += f"   📅 Modificado: {template['modified']}\n\n"
+            
+            if default_templates:
+                result += "🏭 **Plantillas predeterminadas:**\n"
+                for i, template in enumerate(default_templates, 1):
+                    result += f"{i}. **{template['name']}**\n"
+                    result += f"   📊 Tamaño: {template['size']}\n"
+                    result += f"   📅 Modificado: {template['modified']}\n"
+                    result += "   💡 Usa: `usar plantilla: " + template['name'] + "`\n\n"
 
-            result += "💡 **Siguiente paso:** usar plantilla: nombre_plantilla.txt\n" "**Por último:** analizar: nombre_plantilla.txt"
+            result += "\n**Siguiente paso:** `analizar: nombre_plantilla.docx`"
             return result
 
         except Exception as e:
@@ -286,24 +307,24 @@ class DocumentFiller:
         """Lista los archivos de datos disponibles"""
         try:
             data_files = []
+            
+            if not os.path.exists(DATA_DIR):
+                os.makedirs(DATA_DIR, exist_ok=True)
+                
             for file in os.listdir(DATA_DIR):
-                if any(
-                        file.endswith(ext)
-                        for ext in self.supported_data_formats):
+                if any(file.endswith(ext) for ext in self.supported_data_formats):
                     file_path = os.path.join(DATA_DIR, file)
-                    size = os.path.getsize(file_path)
-                    modified = datetime.fromtimestamp(
-                        os.path.getmtime(file_path))
-                    data_files.append({
-                        'name':
-                        file,
-                        'size':
-                        f"{size/1024:.1f} KB",
-                        'modified':
-                        modified.strftime("%Y-%m-%d %H:%M"),
-                        'type':
-                        file.split('.')[-1].upper()
-                    })
+                    try:
+                        size = os.path.getsize(file_path)
+                        modified = datetime.fromtimestamp(os.path.getmtime(file_path))
+                        data_files.append({
+                            'name': file,
+                            'size': f"{size/1024:.1f} KB",
+                            'modified': modified.strftime("%Y-%m-%d %H:%M"),
+                            'type': file.split('.')[-1].upper()
+                        })
+                    except Exception as e:
+                        continue
 
             if not data_files:
                 return f"""
@@ -313,6 +334,7 @@ Para empezar:
 1. Coloca tus archivos de datos en: {DATA_DIR}/
 2. Formatos soportados: {', '.join(self.supported_data_formats)}
 3. O crea datos de ejemplo: 'crear ejemplo datos: plantilla.docx'
+4. O convierte archivos existentes: 'convertir a json: archivo.csv'
                 """
 
             result = "📊 **ARCHIVOS DE DATOS DISPONIBLES:**\n\n"
@@ -335,6 +357,9 @@ Para empezar:
 
             # Extraer texto según el formato
             text_content = self.extract_text_from_file(file_path)
+            
+            if not text_content or "Error" in text_content:
+                return f"❌ No se pudo extraer el contenido de: {filename}"
 
             # Usar Gemini para analizar los campos
             analysis_prompt = f"""
@@ -352,19 +377,18 @@ Devuelve una lista JSON con los campos identificados y su descripción.
 Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción del campo", "tipo": "texto/numero/fecha"}}]}}
             """
 
-            response = self.model.generate_content(analysis_prompt)
-
-            # Intentar extraer JSON de la respuesta
             try:
-                # Buscar JSON en la respuesta
+                response = self.model.generate_content(analysis_prompt)
+                
+                # Intentar extraer JSON de la respuesta
                 import re
                 json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
                 if json_match:
                     campos_info = json.loads(json_match.group())
                 else:
-                    # Si no hay JSON válido, crear estructura básica
                     campos_info = {"campos": []}
-            except:
+            except Exception as ai_error:
+                # Si falla la IA, usar análisis básico
                 campos_info = {"campos": []}
 
             # También buscar marcadores directamente en el texto
@@ -380,7 +404,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
 
             for marcador in marcadores:
                 if marcador not in campos_encontrados:
-                    campos_info["campos"].append({
+                    campos_info.setdefault("campos", []).append({
                         "nombre": marcador,
                         "descripcion": f"Campo {marcador}",
                         "tipo": "texto"
@@ -389,14 +413,14 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
             # Formatear resultado
             result = f"🔍 **ANÁLISIS DE PLANTILLA: {filename}**\n\n"
 
-            if campos_info["campos"]:
+            if campos_info.get("campos"):
                 result += "📋 **Campos identificados:**\n\n"
                 for i, campo in enumerate(campos_info["campos"], 1):
                     result += f"{i}. **{campo['nombre']}**\n"
                     result += f"   📝 {campo['descripcion']}\n"
                     result += f"   🏷️ Tipo: {campo['tipo']}\n\n"
 
-                result += f"💡 **Siguiente paso:** Crea datos de ejemplo con 'crear ejemplo datos: {filename}'\n"
+                result += f"💡 **Siguiente paso:** `crear ejemplo datos: {filename}`\n"
             else:
                 result += "⚠️ No se identificaron campos automáticamente.\n"
                 result += "Revisa que tu plantilla tenga marcadores como {{campo}} o [campo]\n"
@@ -415,6 +439,9 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                 return f"❌ No se encontró la plantilla: {filename}"
 
             text_content = self.extract_text_from_file(file_path)
+            
+            if not text_content or "Error" in text_content:
+                return f"❌ No se pudo extraer el contenido de: {filename}"
 
             # Buscar marcadores
             import re
@@ -425,8 +452,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
 
             # Crear datos de ejemplo
             ejemplo_datos = {}
-            ejemplo_datos[
-                "_info"] = f"Datos de ejemplo para {filename} - Generado el {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            ejemplo_datos["_info"] = f"Datos de ejemplo para {filename} - Generado el {datetime.now().strftime('%Y-%m-%d %H:%M')}"
             ejemplo_datos["fecha"] = datetime.now().strftime("%Y-%m-%d")
 
             # Datos típicos de empresa/persona
@@ -443,8 +469,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                 "importe": "50000",
                 "cuantia": "50000",
                 "proyecto": "Desarrollo de plataforma digital innovadora",
-                "descripcion":
-                "Descripción detallada del proyecto o actividad",
+                "descripcion": "Descripción detallada del proyecto o actividad",
                 "representante": "Juan Pérez García",
                 "cargo": "Director General",
                 "expediente": "EXP/2024/001",
@@ -459,6 +484,11 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                 else:
                     # Generar valor basado en el nombre del campo
                     ejemplo_datos[marcador] = f"[COMPLETAR_{marcador.upper()}]"
+
+            # Si no se encontraron marcadores, crear estructura básica
+            if not marcadores:
+                for key, value in datos_tipicos.items():
+                    ejemplo_datos[key] = value
 
             # Guardar archivo JSON
             json_filename = f"datos_ejemplo_{filename.split('.')[0]}.json"
@@ -477,7 +507,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
 
             result += f"\n💡 **Siguiente paso:**\n"
             result += f"1. Edita el archivo JSON con tus datos reales\n"
-            result += f"2. Usa: 'rellenar: {filename} con {json_filename}'\n"
+            result += f"2. Usa: `rellenar: {filename} con {json_filename}`\n"
 
             return result
 
@@ -489,7 +519,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
         try:
             # Parsear comando: "plantilla.docx con datos.json"
             if " con " not in command:
-                return "❌ Formato incorrecto. Usa: 'rellenar: plantilla.docx con datos.json'"
+                return "❌ Formato incorrecto. Usa: `rellenar: plantilla.docx con datos.json`"
 
             parts = command.split(" con ")
             template_name = parts[0].strip()
@@ -531,19 +561,25 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                     return f.read()
 
             elif file_path.endswith('.docx'):
-                doc = Document(file_path)
-                text = []
-                for paragraph in doc.paragraphs:
-                    text.append(paragraph.text)
-                return '\n'.join(text)
+                try:
+                    doc = Document(file_path)
+                    text = []
+                    for paragraph in doc.paragraphs:
+                        text.append(paragraph.text)
+                    return '\n'.join(text)
+                except Exception as docx_error:
+                    return f"Error procesando DOCX: {docx_error}"
 
             elif file_path.endswith('.pdf'):
-                with open(file_path, 'rb') as f:
-                    reader = PyPDF2.PdfReader(f)
-                    text = []
-                    for page in reader.pages:
-                        text.append(page.extract_text())
-                    return '\n'.join(text)
+                try:
+                    with open(file_path, 'rb') as f:
+                        reader = PyPDF2.PdfReader(f)
+                        text = []
+                        for page in reader.pages:
+                            text.append(page.extract_text())
+                        return '\n'.join(text)
+                except Exception as pdf_error:
+                    return f"Error procesando PDF: {pdf_error}"
 
             return ""
         except Exception as e:
@@ -570,7 +606,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                 return {}
 
             elif data_path.endswith('.txt'):
-                # Formato clave=valor, si no, intentamos separar por tabulaciones o comas
+                # Formato clave=valor
                 data = {}
                 with open(data_path, 'r', encoding='utf-8') as f:
                     for line in f:
@@ -581,6 +617,8 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                             key, value = line.split('\t', 1)
                         elif ',' in line:
                             key, value = line.split(',', 1)
+                        elif ':' in line:
+                            key, value = line.split(':', 1)
                         else:
                             continue
                         data[key.strip()] = value.strip()
@@ -591,8 +629,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
             print(f"Error cargando datos: {e}")
             return {}
 
-    def fill_docx(self, template_path: str, data: dict,
-                  output_name: str) -> str:
+    def fill_docx(self, template_path: str, data: dict, output_name: str) -> str:
         """Rellena un documento DOCX"""
         try:
             doc = Document(template_path)
@@ -605,6 +642,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
 
             # Reemplazar en párrafos
             for paragraph in doc.paragraphs:
+                original_text = paragraph.text
                 for key, value in data.items():
                     if key.startswith('_'):  # Saltar metadatos
                         continue
@@ -612,8 +650,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                     patterns = [f'{{{{{key}}}}}', f'[{key}]', f'_{key}_']
                     for pattern in patterns:
                         if pattern in paragraph.text:
-                            paragraph.text = paragraph.text.replace(
-                                pattern, str(value))
+                            paragraph.text = paragraph.text.replace(pattern, str(value))
                             replacements += 1
 
             # Reemplazar en tablas
@@ -624,13 +661,10 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                             if key.startswith('_'):
                                 continue
 
-                            patterns = [
-                                f'{{{{{key}}}}}', f'[{key}]', f'_{key}_'
-                            ]
+                            patterns = [f'{{{{{key}}}}}', f'[{key}]', f'_{key}_']
                             for pattern in patterns:
                                 if pattern in cell.text:
-                                    cell.text = cell.text.replace(
-                                        pattern, str(value))
+                                    cell.text = cell.text.replace(pattern, str(value))
                                     replacements += 1
 
             # Guardar documento rellenado
@@ -654,8 +688,7 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
         except Exception as e:
             return f"❌ Error procesando DOCX: {e}"
 
-    def fill_txt(self, template_path: str, data: dict,
-                 output_name: str) -> str:
+    def fill_txt(self, template_path: str, data: dict, output_name: str) -> str:
         """Rellena un documento de texto"""
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
@@ -692,6 +725,8 @@ Formato: {{"campos": [{{"nombre": "nombre_campo", "descripcion": "Descripción d
                 result += "⚠️ **Advertencia:** No se realizaron reemplazos. Verifica que:\n"
                 result += "• Los marcadores en la plantilla coincidan con los datos\n"
                 result += "• Usa formato {{campo}}, [campo] o _campo_\n"
+            else:
+                result += "💡 **El documento está listo para usar**\n"
 
             return result
 
