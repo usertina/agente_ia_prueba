@@ -1,0 +1,32 @@
+[Nombre de tu empresa o institución]: Fundación Educación Global
+[Dirección]: Calle Falsa 123
+[Ciudad, Código Postal]: Madrid, 28000
+
+[Fecha]: 24/09/2025
+
+[Nombre de la empresa destinataria]: Tech Solutions S.A.
+[Dirección de la empresa]: Avenida Innovación 45
+[Ciudad, Código Postal]: Madrid, 28010
+
+Asunto: Solicitud de apoyo / colaboración
+
+Estimados señores:
+
+Me dirijo a ustedes en representación de Fundación Educación Global, con el fin de solicitar su apoyo en el programa de becas para estudiantes en riesgo de exclusión.
+
+Nuestro objetivo es ofrecer oportunidades educativas a jóvenes con talento, y consideramos que su colaboración sería fundamental para lograr impactar positivamente a más de 100 estudiantes este año.
+
+Agradeceríamos cualquier tipo de apoyo que puedan ofrecer, ya sea en forma de financiero, material educativo o asesoría técnica, y estamos abiertos a coordinar una reunión para proporcionar detalles adicionales y discutir posibles formas de colaboración.
+
+Adjunto a la presente encontrará el plan de acción y el presupuesto estimado, que le permitirán conocer más a fondo nuestra propuesta.
+
+Agradecemos de antemano su atención y quedamos a su disposición para cualquier consulta.
+
+Atentamente,
+
+[Firma]
+
+Nombre: María López
+Cargo: Directora Ejecutiva
+Empresa / Institución: Fundación Educación Global
+Teléfono / Email: mlopez@fundacioneducacion.org

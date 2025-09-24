@@ -1,0 +1,17 @@
+{
+  "mi_empresa": "Fundación Educación Global",
+  "direccion_empresa": "Calle Falsa 123",
+  "ciudad_codigo": "Madrid, 28000",
+  "fecha": "24/09/2025",
+  "empresa_destinataria": "Tech Solutions S.A.",
+  "direccion_destinataria": "Avenida Innovación 45",
+  "ciudad_destinataria": "Madrid, 28010",
+  "proyecto_necesidad": "el programa de becas para estudiantes en riesgo de exclusión",
+  "objetivo": "ofrecer oportunidades educativas a jóvenes con talento",
+  "resultado_esperado": "impactar positivamente a más de 100 estudiantes este año",
+  "tipo_apoyo": "financiero, material educativo o asesoría técnica",
+  "documentos_adjuntos": "el plan de acción y el presupuesto estimado",
+  "nombre_representante": "María López",
+  "cargo_representante": "Directora Ejecutiva",
+  "contacto_representante": "mlopez@fundacioneducacion.org"
+}

@@ -1,0 +1,29 @@
+# FastAPI y servidor
+fastapi==0.109.0
+uvicorn==0.23.1
+jinja2==3.1.2
+python-multipart==0.0.6
+
+# Variables de entorno
+python-dotenv==1.0.0
+
+# Google Custom Search API
+google-api-python-client==2.99.0
+
+# Gemini AI
+google-generativeai==0.8.5
+
+# Librerías útiles
+requests==2.31.0
+google-auth-oauthlib>=1.1.0
+google-auth>=2.23.0
+
+aiofiles
+sqlite3
+python-docx
+PyPDF2
+pandas
+openpyxl
+mammoth
+# docx2pdf  # Opcional para convertir a PDF
+pathlib
