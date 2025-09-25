@@ -544,6 +544,8 @@ ppm,intensidad
             # Análisis post-limpieza
             analysis_clean = self.perform_spectrum_analysis(x, y_clean)
             improvement = analysis_clean['snr'] - analysis['snr']
+
+            
             
             result = f"✅ **ESPECTRO LIMPIADO AUTOMÁTICAMENTE**\n\n"
             result += f"📄 **Archivo original:** {filename}\n"

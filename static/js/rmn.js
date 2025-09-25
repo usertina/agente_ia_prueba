@@ -149,6 +149,7 @@ async function loadSpectraList() {
                                 class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
                             📥
                         </button>
+                        
                     </div>
                 </div>
             `).join('');
@@ -207,7 +208,214 @@ async function loadRMNStats() {
     }
 }
 
-// Cargar estadísticas al inicio
-document.addEventListener('DOMContentLoaded', function() {
-    loadRMNStats();
-});
+// -----------------------------
+// Mostrar espectro limpio con descarga
+// -----------------------------
+// -----------------------------
+// Mostrar espectro limpio con descarga (Versión mejorada)
+// -----------------------------
+function showCleanResult(result) {
+    const containerId = 'cleaned-spectra';
+    let container = document.getElementById(containerId);
+
+    // Si no existe el contenedor, lo creamos
+    if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.className = 'mt-4 space-y-4';
+        const rmnSection = document.getElementById('rmn-section');
+        rmnSection.appendChild(container);
+    }
+
+    const cleanFileName = result.cleaned_file.split('/').pop();
+    const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
+    
+    // Formatear parámetros para mostrar mejor
+    const paramsStr = result.params ? 
+        Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
+        'Parámetros automáticos';
+
+    // Crear entrada similar a documentos
+    const entry = document.createElement('div');
+    entry.className = 'p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500';
+    entry.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center space-x-3">
+                <div class="text-2xl">🧪</div>
+                <div>
+                    <div class="text-green-800 dark:text-green-200 font-bold text-lg">ESPECTRO LIMPIADO</div>
+                    <div class="text-xs text-green-600 dark:text-green-400">
+                        ${new Date().toLocaleString('es-ES')}
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-1">
+                <button onclick="analyzeCleanSpectrum('${cleanFileName}')" 
+                        class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+                    🔍 Analizar
+                </button>
+                <button onclick="compareWithOriginal('${result.original_file}', '${cleanFileName}')" 
+                        class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs">
+                    📊 Comparar
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+            <div class="space-y-1">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
+                    <span class="font-mono text-gray-800 dark:text-gray-200">${result.original_file}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
+                    <span class="font-mono text-green-700 dark:text-green-300">${cleanFileName}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Método:</span>
+                    <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
+                </div>
+            </div>
+            <div class="space-y-1">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Mejora SNR:</span>
+                    <span class="font-semibold text-green-600 dark:text-green-400">+${result.snr_improvement || '0'} dB</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Parámetros:</span>
+                    <span class="text-xs text-gray-700 dark:text-gray-300">${paramsStr}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Estado:</span>
+                    <span class="text-green-600 dark:text-green-400 font-semibold">✅ Listo</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
+            <a href="/download/cleaned/${encodeURIComponent(cleanFileName)}" download
+               class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+                📥 Descargar CSV Limpio
+            </a>
+            
+            ${result.plot_file ? `
+            <a href="/download/plot/${encodeURIComponent(plotFileName)}" download
+               class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                📊 Descargar Gráfico
+            </a>
+            ` : ''}
+            
+            <button onclick="exportSpectrum('${cleanFileName}', 'json')" 
+                    class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
+                📁 Exportar JSON
+            </button>
+            
+            <button onclick="showSpectrumDetails('${cleanFileName}')" 
+                    class="flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
+                ℹ️ Detalles
+            </button>
+        </div>
+        
+        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+            <span>💡 Haz clic en "Analizar" para ver estadísticas detalladas</span>
+            <span>🕒 Procesado en ${result.processing_time || '0'}s</span>
+        </div>
+    `;
+
+    container.prepend(entry);
+
+    // Actualizar estadísticas RMN
+    updateRMNStats();
+    
+    // Mostrar notificación de éxito
+    showNotification('success', `Espectro limpiado: ${cleanFileName}`, 'El archivo está listo para descargar');
+}
+
+// -----------------------------
+// Funciones auxiliares para espectros limpios
+// -----------------------------
+
+function analyzeCleanSpectrum(filename) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `analizar: ${filename}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+function compareWithOriginal(originalFile, cleanFile) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `comparar: ${originalFile} con ${cleanFile}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+function exportSpectrum(filename, format) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `exportar: ${filename} formato ${format}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+function showSpectrumDetails(filename) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `detalles: ${filename}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+// -----------------------------
+// Actualizar estadísticas RMN
+// -----------------------------
+async function updateRMNStats() {
+    try {
+        const response = await fetch('/files/spectra');
+        const data = await response.json();
+        
+        const statsElement = document.getElementById('rmn-stats');
+        if (statsElement) {
+            const spectraCount = data.spectra ? data.spectra.length : 0;
+            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
+            const plotsCount = data.plots ? data.plots.length : 0;
+            
+            statsElement.innerHTML = `
+                <strong>📊 Estado RMN</strong><br>
+                <span class="text-sm">Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}</span>
+            `;
+        }
+    } catch (error) {
+        console.error('Error actualizando estadísticas RMN:', error);
+    }
+}
+
+// -----------------------------
+// Sistema de notificaciones para espectros
+// -----------------------------
+function showNotification(type, title, message) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+    } text-white`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center space-x-3">
+            <span class="text-xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : '💡'}</span>
+            <div>
+                <div class="font-semibold">${title}</div>
+                <div class="text-sm opacity-90">${message}</div>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
+                ×
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}

@@ -11,6 +11,11 @@ from multi_user_notification_system import multi_user_system
 from datetime import datetime
 import asyncio
 import shutil
+from flask import Flask, send_from_directory, request, render_template
+from tools.rmn_spectrum_cleaner import rmn_cleaner
+
+
+
 
 load_dotenv()
 
@@ -352,17 +357,35 @@ async def ask(request: Request, user_input: str = Form(...)):
             tool = "note"
             result = use_tool(tool, user_input)
 
-        # Manejar búsquedas web directamente
+       
+            # Manejar búsquedas web directamente
         elif user_input_strip.startswith("buscar "):
             tool = "web_search"
             query = user_input[7:].strip()
-            result = web_search_formatted(query)
-            return JSONResponse({
-                "result_type": "list",
-                "result_data": result,
-                "input": user_input,
-                "tool": tool
-            })
+
+            # Detectar si es una URL directa
+            if query.startswith(("http://", "https://")) or "." in query:
+                # Añadir https si no tiene protocolo
+                if not query.startswith(("http://", "https://")):
+                    query = "https://" + query
+
+                url_to_open = web_search_run(query)  # Tu función run prepara la URL
+                return JSONResponse({
+                    "result_type": "open_url",
+                    "result_data": f"Abriendo {query}",
+                    "url": url_to_open,
+                    "input": user_input,
+                    "tool": tool
+                })
+            else:
+                # Búsqueda normal en web
+                result = web_search_formatted(query)
+                return JSONResponse({
+                    "result_type": "list",
+                    "result_data": result,
+                    "input": user_input,
+                    "tool": tool
+                })
 
         # Manejar notificaciones directamente - CORREGIDO
         elif any(keyword in user_input_strip for keyword in [
@@ -943,6 +966,13 @@ async def get_notifications_legacy(request: Request):
             "count": 0, 
             "error": str(e)
         })
+@app.route("/download/cleaned/<filename>")
+def download_cleaned(filename):
+    return send_from_directory(rmn_cleaner.output_dir, filename, as_attachment=True)
+
+@app.route("/download/plot/<filename>")
+def download_plot(filename):
+    return send_from_directory(rmn_cleaner.plots_dir, filename, as_attachment=True)
 
 
 # Endpoint para verificar el estado del sistema

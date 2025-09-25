@@ -31,6 +31,23 @@ def ask_gemini_for_tool(prompt: str) -> str:
     url_pattern = r"(https?://[^\s]+)"
     if re.match(url_pattern, prompt.strip()):
         return "web_open"
+    
+     # Detección específica por patrón de archivo científico
+    scientific_file_patterns = [
+        r'mz\d+.*\.csv',  # Archivos tipo MZ0031_algo.csv
+        r'.*_array.*\.csv',  # Archivos con _array_
+        r'.*_cut.*\.csv',    # Archivos con _cut
+        r'.*pfos.*\.csv',    # Archivos con pfos
+        r'.*pfas.*\.csv',    # Archivos con pfas
+    ]
+    
+    for pattern in scientific_file_patterns:
+        if re.search(pattern, prompt_lower) and any(cmd in prompt_lower for cmd in ["analizar", "limpiar", "comparar"]):
+            return "rmn_spectrum_cleaner"
+    
+    # Si el prompt contiene "analizar:" seguido de .csv, probablemente es espectro
+    if "analizar:" in prompt_lower and ".csv" in prompt_lower:
+        return "rmn_spectrum_cleaner"
 
     # Palabras clave de generación de código
     code_gen_keywords = [
@@ -68,14 +85,26 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "document_filler", "plantillas", "datos", "rellenar:"
     ]
 
-    # Palabras clave de espectros RMN - NUEVA SECCIÓN
+   # En agent.py, reemplaza la sección de rmn_keywords con esto:
+
+    # Palabras clave de espectros RMN - EXPANDIDA
     rmn_keywords = [
+        # RMN tradicional
         "rmn", "espectro", "espectros", "resonancia magnética", "resonancia magnetica",
         "ruido", "limpiar espectro", "filtrar", "savgol", "gaussian", "mediana",
         "wiener", "línea base", "linea base", "snr", "señal ruido",
         "ppm", "intensidad", "picos", "analizar espectro", "limpiar auto",
         "comparar espectro", "exportar espectro", "nmr", "spectrum", "noise",
-        "baseline", "peaks", "chemical shift", "listar espectros"
+        "baseline", "peaks", "chemical shift", "listar espectros",
+    
+        # Análisis químico y contaminantes - NUEVO
+        "pfos", "pfas", "contaminante", "contaminantes", "array", "cutref",
+        "cromatografia", "cromatografía", "espectrometria", "espectrometría",
+        "masas", "gc-ms", "lc-ms", "hplc", "uplc", "mz",
+    
+        # Detección más específica para archivos de datos
+        "_array_", "_cut", "_ref", "datos analíticos", "datos analiticos",
+        "procesar datos", "limpiar datos", "filtrar datos"
     ]
 
     # Revisar espectros RMN PRIMERO (nueva herramienta)

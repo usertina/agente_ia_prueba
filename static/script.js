@@ -437,6 +437,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderResult(data) {
         let resultHtml = '';
 
+        if (typeof data.result_data === 'string' && data.result_data.startsWith('OPEN_URL:')) {
+            const url = data.result_data.replace('OPEN_URL:', '');
+            window.open(url, '_blank', 'noopener,noreferrer');
+            data.result_type = 'open_url';
+            data.url = url;
+        }
+
         switch (data.result_type) {
             case 'list':
                 resultHtml = data.result_data.map(item => `
@@ -448,19 +455,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'open_url':
-                setTimeout(() => {
-                    window.open(data.url, '_blank', 'noopener,noreferrer');
-                }, 500);
-                resultHtml = `
-                    <div class="p-4 bg-blue-50 dark:bg-blue-800 rounded-lg shadow-sm">
-                        <p class="text-blue-800 dark:text-blue-200 font-semibold">${data.result_data}</p>
-                        <button onclick="window.open('${data.url}', '_blank', 'noopener,noreferrer')" 
+                {
+                // Extraer URL si viene con prefijo OPEN_URL:
+                    let url = data.url;
+                    if (url && url.startsWith('OPEN_URL:')) {
+                        url = url.replace('OPEN_URL:', '');
+                    }
+
+                // Abrir en nueva pestaña de inmediato
+                    if (url) {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    }
+
+                    resultHtml = `
+                        <div class="p-4 bg-blue-50 dark:bg-blue-800 rounded-lg shadow-sm">
+                            <p class="text-blue-800 dark:text-blue-200 font-semibold">${data.result_data}</p>
+                            ${url ? `<button onclick="window.open('${url}', '_blank', 'noopener,noreferrer')" 
                                 class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                            🔗 Abrir ${data.url}
-                        </button>
-                    </div>
-                `;
+                                🔗 Abrir ${url}
+                            </button>` : ''}
+                        </div>
+                    `;
+                }
                 break;
+
 
             case 'download_file':
                 resultHtml = `
