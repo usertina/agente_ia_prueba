@@ -4,12 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agente Gemini</title>
-<!-- Tailwind CSS CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
     tailwind.config = { darkMode: 'class' }
 </script>
-<link rel="stylesheet" href="/static/style.css">
 <style>
     body { font-family: 'Inter', sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -44,13 +42,13 @@
             <div id="loading-indicator" class="hidden text-center text-blue-500 italic">Cargando...</div>
         </div>
 
-        <!-- Formulario de entrada -->
+        <!-- Formulario de entrada - IDs CORREGIDOS -->
         <form id="commandForm" class="flex mt-auto">
             <input type="text" id="user_input" class="flex-1 p-3 rounded-l-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="Escribe tu comando aquí" required>
             <button type="submit" class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-r-full focus:outline-none focus:ring-2 ring-blue-500 transition-colors">Enviar</button>
         </form>
 
-        <!-- Contenedor unificado RMN + Documentos -->
+        <!-- Contenedor RMN + Documentos -->
         <div id="rmn-document-container" class="flex flex-col mt-6 space-y-6">
 
             <!-- RMN -->
@@ -59,7 +57,7 @@
                     🧪 Espectros RMN ▶
                 </button>
                 <div id="rmn-section" class="hidden mt-4 space-y-4">
-                    <!-- Ayuda rápida RMN -->
+                    <!-- Ayuda RMN -->
                     <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
                         <div class="text-sm text-green-700 dark:text-green-300 mb-2">
                             <strong>🔬 Limpiador de Espectros RMN</strong><br>
@@ -90,40 +88,7 @@
                             <button onclick="quickCleanGaussian()" class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">🌊 Gaussiano</button>
                             <button onclick="quickCleanMedian()" class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">🎯 Mediana</button>
                         </div>
-                        <div class="text-xs text-purple-700 dark:text-purple-300 space-y-1">
-                            <div><strong>Auto:</strong> Selecciona el mejor método automáticamente</div>
-                            <div><strong>Savgol:</strong> Preserva la forma de los picos</div>
-                            <div><strong>Gaussiano:</strong> Suavizado general efectivo</div>
-                            <div><strong>Mediana:</strong> Elimina picos de ruido</div>
-                        </div>
                     </div>
-
-                    <!-- Comandos Rápidos RMN -->
-                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">⚡ Comandos Rápidos RMN</h4>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button onclick="executeRMNCommand('listar espectros')" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">📊 Listar espectros</button>
-                            <button onclick="executeRMNCommand('métodos')" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">🔧 Ver métodos</button>
-                        </div>
-                        <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
-                            <strong>📝 Ejemplos de comandos:</strong><br>
-                            • <code>analizar: mi_espectro.csv</code><br>
-                            • <code>limpiar auto: mi_espectro.csv</code><br>
-                            • <code>comparar: mi_espectro.csv</code><br>
-                            • <code>exportar: mi_espectro.csv formato json</code>
-                        </div>
-                    </div>
-                    <!-- Espectros Limpios Generados -->
-                    <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg mt-4">
-                        <h4 class="font-semibold text-green-800 dark:text-green-200 mb-3">
-                            📂 Espectros Limpios Generados
-                        </h4>
-                        <div id="cleaned-spectra" class="space-y-4 text-sm text-gray-600 dark:text-gray-300">
-                            <div class="text-xs italic text-gray-400">Todavía no hay espectros limpios</div>
-                        </div>
-                    </div>
-
-
 
                     <!-- Estado RMN -->
                     <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
@@ -153,32 +118,12 @@
                     <div class="bg-indigo-50 dark:bg-indigo-900 p-4 rounded-lg">
                         <h4 class="font-semibold text-indigo-800 dark:text-indigo-200 mb-3">📊 Subir Datos</h4>
                         <input type="file" id="data-file-input" accept=".csv,.json,.xlsx,.ods" class="block w-full text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        <button onclick="uploadData()" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium">📤 Subir Datos</button>
+                        <button onclick="uploadDataFile()" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium">📤 Subir Datos</button>
                     </div>
-                    <!-- Archivos Generados -->
-                    <div class="bg-pink-50 dark:bg-pink-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-pink-800 dark:text-pink-200 mb-3">📂 Documentos Generados</h4>
-                        <div id="generated-files" class="space-y-2 text-sm text-gray-600 dark:text-gray-300">No hay archivos generados</div>
-                    </div>
-                    <!-- Comandos Rápidos Documentos -->
-                    <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">⚡ Comandos Rápidos Documentos</h4>
-                        <div class="grid grid-cols-2 gap-2 text-xs">
-                            <button onclick="executeDocCommand('listar plantillas')" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">📑 Listar plantillas</button>
-                            <button onclick="executeDocCommand('listar datos')" class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">📊 Listar datos</button>
-                        </div>
-                        <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
-                            <strong>📝 Ejemplos de comandos:</strong><br>
-                            • <code>usar plantilla: contrato.docx</code><br>
-                            • <code>rellenar: plantilla con datos.csv</code><br>
-                            • <code>exportar: informe en pdf</code>
-                        </div>
-                    </div>
-                    <!-- Guía de Marcadores -->
-                    <div class="bg-teal-50 dark:bg-teal-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-teal-800 dark:text-teal-200 mb-3">🔖 Guía de Marcadores</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">Usa <code>{{campo}}</code> en tus plantillas para que se reemplacen automáticamente con los valores de tus datos.</p>
-                    </div>
+                    <!-- Listas de archivos -->
+                    <div id="templates-list"></div>
+                    <div id="data-files-list"></div>
+                    <div id="output-files-list"></div>
                 </div>
             </div>
 
@@ -189,12 +134,12 @@
     <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col transition-colors duration-300">
         <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">💾 Archivos Guardados</h2>
         <div id="files-list" class="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
-            <!-- Sección de Código -->
+            <!-- Código -->
             <div id="code-files-container">
                 <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">💻 Código</h3>
                 <div id="code-files-list" class="space-y-2 mb-4"></div>
             </div>
-            <!-- Sección de Notas -->
+            <!-- Notas -->
             <div id="notes-section">
                 <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">📝 Notas</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mb-2">Cargando...</p>
@@ -202,12 +147,13 @@
         </div>
     </div>
 </div>
-    <!-- Modal Unificada de Guía y Palabras Clave -->
+
+<!-- Modal Guía -->
 <div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso y Palabras Clave del Agente</h2>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso</h2>
             <button id="close-guide-keywords-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -215,104 +161,48 @@
             </button>
         </div>
 
-        <!-- Tabs -->
-        <div class="mb-4">
-            <button class="tab-button px-4 py-2 bg-blue-100 dark:bg-blue-700 rounded-l-xl focus:outline-none" data-tab="tools">Herramientas</button>
-            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-r-xl focus:outline-none" data-tab="keywords">Palabras Clave</button>
-        </div>
-
-        <!-- Contenido de Tabs -->
-        <div id="tab-tools" class="tab-content">
-            <!-- Note -->
-            <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl mb-4">
-                <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Note (Notas)</h3>
-                <p class="mt-2">Maneja tus notas personales. Se guardan automáticamente con fecha y hora.</p>
+        <div class="space-y-6">
+            <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl">
+                <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Notas</h3>
                 <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Guardar nota:</strong> <code>guardar: tu nota aquí</code></li>
+                    <li><strong>Guardar:</strong> <code>guardar: tu nota aquí</code></li>
                     <li><strong>Ver todas:</strong> <code>leer</code></li>
                     <li><strong>Buscar:</strong> <code>buscar: término</code></li>
-                    <li><strong>Contar:</strong> <code>contar</code></li>
-                    <li><strong>Borrar todas:</strong> <code>borrar</code></li>
-                    <li><strong>Descargar:</strong> <code>descargar</code></li>
+                    <li><strong>Borrar:</strong> <code>borrar</code></li>
                 </ul>
             </div>
 
-            <!-- Save Code -->
-            <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl mb-4">
-                <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Save Code (Guardar Código)</h3>
-                <p class="mt-2">Guarda snippets de código en la carpeta de archivos.</p>
+            <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl">
+                <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Código</h3>
                 <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Formato:</strong> <code>nombre_archivo||contenido_del_codigo</code></li>
-                    <li><strong>Ejemplo:</strong> <code>script.py||print("Hola Mundo")</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>calculadora.py||def suma(a,b): return a+b</code></li>
+                    <li><strong>Guardar:</strong> <code>script.py||print("Hola")</code></li>
+                    <li><strong>Generar:</strong> <code>generar: script de calculadora</code></li>
                 </ul>
             </div>
 
-            <!-- Code Gen -->
-            <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl mb-4">
-                <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">⚙️ Code Gen (Generar Código)</h3>
-                <p class="mt-2">Genera código automáticamente usando IA y lo guarda automáticamente.</p>
+            <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl">
+                <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Búsqueda</h3>
                 <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Formato básico:</strong> <code>generar: un script en Python que diga hola mundo</code></li>
-                    <li><strong>Con nombre personalizado:</strong> <code>mi_script.py||generar un script que haga una calculadora</code></li>
-                    <li><strong>Solo descripción:</strong> <code>crear una función que sume números</code></li>
+                    <li><strong>Buscar web:</strong> <code>buscar python tutorials</code></li>
+                    <li><strong>Abrir URL:</strong> <code>https://www.google.com</code></li>
                 </ul>
             </div>
 
-            <!-- Calculator -->
-            <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl mb-4">
-                <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧮 Calculator (Calculadora)</h3>
-                <p class="mt-2">Evalúa expresiones matemáticas complejas.</p>
+            <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl">
+                <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">🧮 Calculadora</h3>
                 <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>2 + 2 * (3 - 1)</code> devuelve <code>6</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>(100 / 2) ** 2</code> devuelve <code>2500.0</code></li>
+                    <li><strong>Calcular:</strong> <code>2 + 2 * (3 - 1)</code></li>
+                    <li><strong>Potencias:</strong> <code>(100 / 2) ** 2</code></li>
                 </ul>
             </div>
 
-            <!-- Web Search -->
-            <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl mb-4">
-                <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Web Search (Búsqueda en la web)</h3>
-                <p class="mt-2">Busca en internet y devuelve los 5 primeros resultados.</p>
+            <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl">
+                <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧪 Espectros RMN</h3>
                 <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>buscar noticias de inteligencia artificial</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>buscar patentes sobre energía solar</code></li>
+                    <li><strong>Analizar:</strong> <code>analizar: espectro.csv</code></li>
+                    <li><strong>Limpiar auto:</strong> <code>limpiar auto: espectro.csv</code></li>
+                    <li><strong>Métodos:</strong> <code>métodos</code></li>
                 </ul>
-            </div>
-
-            <!-- Web Open -->
-            <div class="p-4 bg-red-100 dark:bg-red-800 rounded-xl mb-4">
-                <h3 class="font-bold text-red-800 dark:text-red-100 text-lg">🌐 Web Open (Abrir Enlaces)</h3>
-                <p class="mt-2">Abre una URL directamente en tu navegador.</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>https://www.wikipedia.org</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>wikipedia.org</code> (agrega https automáticamente)</li>
-                </ul>
-            </div>
-        </div>
-
-        <div id="tab-keywords" class="tab-content hidden">
-            <!-- Código -->
-            <div class="mb-4">
-                <h3 class="font-semibold text-blue-700 dark:text-blue-300">💻 Generación de Código</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
-                    generar, genera, crear, crea, escribir, escribe, codigo, código, script, programa, función, funcion, algoritmo, clase, app, aplicación, aplicacion
-                </p>
-            </div>
-
-            <!-- Notificaciones -->
-            <div class="mb-4">
-                <h3 class="font-semibold text-green-700 dark:text-green-300">🔔 Notificaciones</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
-                    listar, listar 10, listar 20, listar papers, listar patentes, listar patents, ver, mostrar, ver recientes, últimas, últimos, recientes, resumen, desglose, borrar, eliminar, borrar papers, eliminar papers, borrar todo, eliminar todo, limpiar, reset, clear, papers, patentes, emails, notificaciones, tipo, tipos, ID, id, identificador, ref, referencia, gestionar, administrar, control, verificar, consultar, notificacion, notificación, alerta, avisar, aviso, email, correo, patente, paper, científico, monitoreo, notificar, activar, keywords, categories, status, estado, test, probar
-                </p>
-            </div>
-
-            <!-- Documentos -->
-            <div class="mb-4">
-                <h3 class="font-semibold text-purple-700 dark:text-purple-300">📄 Documentos</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
-                    plantilla, rellenar, documento, formulario, listar plantillas, listar datos, analizar, crear ejemplo, ayuda, subvencion, subvención, document_filler, plantillas, datos, rellenar:
-                </p>
             </div>
         </div>
     </div>
@@ -328,23 +218,10 @@
     guideKeywordsModal.addEventListener("click", (e) => {
         if(e.target === guideKeywordsModal) guideKeywordsModal.classList.add("hidden");
     });
-
-    // Tabs
-    const tabButtons = document.querySelectorAll(".tab-button");
-    const tabContents = document.querySelectorAll(".tab-content");
-    tabButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            tabContents.forEach(tc => tc.classList.add("hidden"));
-            tabButtons.forEach(b => b.classList.remove("bg-blue-100","dark:bg-blue-700"));
-            tabButtons.forEach(b => b.classList.add("bg-gray-100","dark:bg-gray-600"));
-            document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
-            btn.classList.remove("bg-gray-100","dark:bg-gray-600");
-            btn.classList.add("bg-blue-100","dark:bg-blue-700");
-        });
-    });
 </script>
-    <script src="/static/js/rmn.js"></script>
-    <script src="/static/script.js"></script>
-    <script type="module" src="/static/js/document.js"></script>
+
+<script src="/static/js/rmn.js"></script>
+<script src="/static/script.js"></script>
+<script type="module" src="/static/js/document.js"></script>
 </body>
 </html>
