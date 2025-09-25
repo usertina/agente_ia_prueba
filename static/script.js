@@ -3,18 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userId = null;
     let notificationCheckInterval = null;
 
-    // 🌙 Configuración inicial del tema oscuro/claro
-    const themeIconEl = document.getElementById('theme-icon');
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && prefersDark)) {
-        document.documentElement.classList.add('dark');
-        if (themeIconEl) themeIconEl.textContent = '☀️';
-    } else {
-        document.documentElement.classList.remove('dark');
-        if (themeIconEl) themeIconEl.textContent = '🌙';
-    }
-
+    // Elementos del DOM
     const form = document.getElementById('commandForm');
     const input = document.getElementById('user_input');
     const historyDiv = document.getElementById('history');
@@ -22,46 +11,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
     const codeFilesList = document.getElementById('code-files-list');
-    const guideButton = document.getElementById('guide-button');
-    const guideModal = document.getElementById('guide-modal');
-    const closeModalButton = document.getElementById('close-modal');
 
-    // 🔔 Inicializar sistema de notificaciones
-    initializeNotificationSystem();
-
-    // 🌓 Cambiar entre modo claro/oscuro
-    themeToggle.addEventListener('click', () => {
-        if (document.documentElement.classList.contains('dark')) {
-            document.documentElement.classList.remove('dark');
-            localStorage.theme = 'light';
-            themeIcon.textContent = '🌙';
-        } else {
-            document.documentElement.classList.add('dark');
-            localStorage.theme = 'dark';
-            themeIcon.textContent = '☀️';
-        }
-    });
-
-    // 📘 Abrir/cerrar modal de la guía de uso
-    if (guideButton) {
-        guideButton.addEventListener('click', () => {
-            guideModal.classList.remove('hidden');
+    // Verificar elementos críticos
+    if (!form || !input || !historyDiv) {
+        console.error('❌ Elementos críticos no encontrados:', {
+            form: !!form,
+            input: !!input, 
+            historyDiv: !!historyDiv
         });
+        return;
     }
 
-    if (closeModalButton) {
-        closeModalButton.addEventListener('click', () => {
-            guideModal.classList.add('hidden');
-        });
+    console.log('✅ Elementos encontrados correctamente');
+
+    // 🌙 Configuración inicial del tema
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && prefersDark)) {
+        document.documentElement.classList.add('dark');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    } else {
+        document.documentElement.classList.remove('dark');
+        if (themeIcon) themeIcon.textContent = '🌙';
     }
 
-    if (guideModal) {
-        guideModal.addEventListener('click', (e) => {
-            if (e.target === guideModal) {
-                guideModal.classList.add('hidden');
+    // 🌓 Cambiar tema
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                if (themeIcon) themeIcon.textContent = '🌙';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                if (themeIcon) themeIcon.textContent = '☀️';
             }
         });
     }
+
+    // 🔔 Inicializar sistema de notificaciones
+    initializeNotificationSystem();
 
     // 📤 Envío del formulario principal
     form.addEventListener('submit', async (e) => {
@@ -70,8 +59,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const userInput = input.value.trim();
         if (userInput === "") return;
 
+        console.log('📤 Enviando comando:', userInput);
+
         showLoading(true);
         input.disabled = true;
+
+        // Ocultar guía inicial
+        const guideSection = document.getElementById('guide-section');
+        if (guideSection && guideSection.style.display !== 'none') {
+            guideSection.style.display = 'none';
+        }
 
         try {
             const response = await fetch('/ask', {
@@ -84,42 +81,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('📦 Respuesta recibida:', data);
+                
                 renderResult(data);
 
-                // 🟢 Actualizar lista de archivos si está disponible
-                if (data.code_files) {
-                    updateCodeFiles(data.code_files);
-                }
-
-                // 📝 Actualizar información de notas
-                if (data.hasOwnProperty('notes_exist')) {
-                    updateNotesInfo(data.notes_exist, data.notes_count);
-                }
-
-                // 📝 Si es save_code o code_gen, recarga manualmente
-                if (data.tool === "save_code" || data.tool === "code_gen") {
+                // Actualizar archivos si es necesario
+                if (data.tool === "save_code" || data.tool === "code_gen" || data.tool === "note") {
                     setTimeout(fetchFiles, 500);
                 }
 
-                // 📝 Si es comando de notas, actualizar info de notas
-                if (data.tool === "note") {
-                    setTimeout(fetchFiles, 300);
-                }
-
-                // 🔔 Si es comando de notificaciones, actualizar estado
+                // Si es comando de notificaciones, actualizar estado
                 if (data.tool === "notifications") {
                     setTimeout(() => {
                         checkNotifications();
                         updateNotificationStatus();
                     }, 1000);
                 }
+
+                // Si es comando de RMN y devuelve resultado de limpieza
+                if (data.tool === "rmn_spectrum_cleaner" && data.result_data && typeof data.result_data === 'object') {
+                    if (data.result_data.type === 'clean_result') {
+                        showCleanResult(data.result_data);
+                    }
+                }
+
             } else {
                 const errorData = await response.json().catch(() => ({ detail: "Error desconocido" }));
                 renderError(errorData.detail || "Ocurrió un error inesperado.");
             }
 
         } catch (error) {
-            console.error("Error en fetch:", error);
+            console.error("❌ Error en fetch:", error);
             renderError("No se pudo conectar con el servidor.");
         } finally {
             showLoading(false);
@@ -128,10 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🔔 Inicializar sistema de notificaciones
+    // 🔔 Funciones de notificaciones
     async function initializeNotificationSystem() {
         try {
-            // Registrar usuario
             const response = await fetch('/notifications/register', {
                 method: 'POST',
                 headers: {
@@ -148,35 +139,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     userId = data.user_id;
                     console.log(`🔔 Usuario registrado: ${userId.substring(0, 12)}...`);
-                    
-                    // Iniciar verificación periódica de notificaciones
                     startNotificationPolling();
                     updateNotificationStatus("✅ Conectado");
-                } else {
-                    console.error("Error registrando usuario:", data.error);
-                    updateNotificationStatus("❌ Error");
                 }
             }
         } catch (error) {
-            console.error("Error inicializando notificaciones:", error);
+            console.error("❌ Error inicializando notificaciones:", error);
             updateNotificationStatus("⚠️ Offline");
         }
     }
 
-    // 🔔 Iniciar polling de notificaciones
     function startNotificationPolling() {
         if (notificationCheckInterval) {
             clearInterval(notificationCheckInterval);
         }
-
-        // Verificar inmediatamente
         checkNotifications();
-
-        // Verificar cada 30 segundos
         notificationCheckInterval = setInterval(checkNotifications, 30000);
     }
 
-    // 🔔 Verificar notificaciones pendientes
     async function checkNotifications() {
         if (!userId) return;
 
@@ -189,33 +169,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     console.log(`📨 ${data.notifications.length} nuevas notificaciones`);
                     
-                    // Mostrar notificaciones en el historial
                     data.notifications.forEach(notification => {
                         showNotificationInHistory(notification);
-                        
-                        // Mostrar notificación nativa del navegador si está soportado
                         showBrowserNotification(notification);
                     });
                 }
             }
         } catch (error) {
-            console.error("Error verificando notificaciones:", error);
+            console.error("❌ Error verificando notificaciones:", error);
         }
     }
 
-    // 🔔 Mostrar notificación en el historial
     function showNotificationInHistory(notification) {
         const entry = document.createElement('div');
-        entry.className = 'entry p-4 bg-blue-50 dark:bg-blue-900 rounded-lg shadow-md border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-800 transition-colors';
+        entry.className = 'entry p-4 bg-blue-50 dark:bg-blue-900 rounded-lg shadow-md border-l-4 border-blue-500';
         
         const icon = getNotificationIcon(notification.type);
-        const timeStr = new Date(notification.timestamp).toLocaleString();
+        const timeStr = new Date().toLocaleString();
         
-        // Obtener URL si está disponible
         const notifData = notification.data || {};
         const url = notifData.url || null;
         
-        // Crear contenido clickeable si hay URL
         const clickableClass = url ? 'cursor-pointer hover:underline' : '';
         const titleContent = url ? 
             `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-800 dark:text-blue-200 font-bold hover:underline">${escapeHtml(notification.title)}</a>` :
@@ -229,95 +203,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-blue-700 dark:text-blue-300 mt-1 ${clickableClass}">
                         ${escapeHtml(notification.message)}
                     </div>
-                    <div class="text-xs text-blue-600 dark:text-blue-400 mt-2 flex justify-between items-center">
-                        <span>${timeStr} • ${notification.type}</span>
-                        ${url ? '<span class="text-blue-500">🔗 Click para abrir</span>' : ''}
+                    <div class="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        ${timeStr} • ${notification.type}
                     </div>
-                    ${createNotificationDetails(notifData)}
                 </div>
             </div>
         `;
         
-        // Hacer toda la notificación clickeable si hay URL
         if (url) {
             entry.addEventListener('click', (e) => {
-                // Prevenir doble-click si ya clickearon el enlace
                 if (e.target.tagName === 'A') return;
-                
                 window.open(url, '_blank', 'noopener,noreferrer');
             });
-            
-            // Cambiar cursor y añadir efecto hover
             entry.style.cursor = 'pointer';
         }
         
         historyDiv.prepend(entry);
-        
-        // Auto-scroll para mostrar la nueva notificación
         entry.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // 🔔 Crear detalles adicionales de la notificación
-    function createNotificationDetails(data) {
-        if (!data || Object.keys(data).length === 0) return '';
-        
-        let details = '';
-        
-        // Detalles para papers científicos
-        if (data.authors && data.authors.length > 0) {
-            const authors = data.authors.slice(0, 3).join(', ');
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1">👥 ${authors}${data.authors.length > 3 ? '...' : ''}</div>`;
-        }
-        
-        if (data.category) {
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400">📂 ${data.category}</div>`;
-        }
-        
-        if (data.abstract) {
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1 italic">${data.abstract.substring(0, 150)}...</div>`;
-        }
-        
-        // Detalles para patentes
-        if (data.app_number) {
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1">🏢 ${data.app_number}</div>`;
-        }
-        
-        if (data.inventors && data.inventors.length > 0) {
-            const inventors = data.inventors.slice(0, 2).join(', ');
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400">👨‍🔬 ${inventors}${data.inventors.length > 2 ? '...' : ''}</div>`;
-        }
-        
-        if (data.keyword) {
-            details += `<div class="text-xs text-blue-600 dark:text-blue-400">🔍 Keyword: ${data.keyword}</div>`;
-        }
-        
-        // Agregar enlaces alternativos para patentes
-        if (data.app_number && data.app_number.startsWith('US')) {
-            const appNumber = data.app_number.replace('US', '');
-            details += `<div class="text-xs mt-2">
-                <span class="text-blue-600 dark:text-blue-400">🔍 Enlaces alternativos: </span>
-                <a href="https://patents.google.com/?q=${data.app_number}" target="_blank" class="text-blue-500 hover:underline">Google Patents</a> • 
-                <a href="https://worldwide.espacenet.com/patent/search/family/simple?q=${data.app_number}" target="_blank" class="text-blue-500 hover:underline">Espacenet</a>
-            </div>`;
-        }
-        
-        // Agregar enlaces alternativos para papers
-        if (data.title && (data.category || data.keyword)) {
-            const searchTitle = encodeURIComponent(data.title);
-            details += `<div class="text-xs mt-2">
-                <span class="text-blue-600 dark:text-blue-400">🔍 Buscar también en: </span>
-                <a href="https://scholar.google.com/scholar?q=${searchTitle}" target="_blank" class="text-blue-500 hover:underline">Google Scholar</a> • 
-                <a href="https://www.semanticscholar.org/search?q=${searchTitle}" target="_blank" class="text-blue-500 hover:underline">Semantic Scholar</a>
-            </div>`;
-        }
-        
-        return details ? `<div class="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">${details}</div>` : '';
-    }
-
-    // 🔔 Mostrar notificación nativa del navegador (también clickeable)
     function showBrowserNotification(notification) {
         if ('Notification' in window && Notification.permission === 'granted') {
-            const icon = getNotificationIcon(notification.type);
             const notifData = notification.data || {};
             const url = notifData.url;
             
@@ -325,11 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: notification.message,
                 icon: '/static/favicon.ico',
                 tag: `${notification.type}_${notification.id}`,
-                badge: '/static/favicon.ico',
-                data: { url: url } // Pasar URL en data
+                data: { url: url }
             });
             
-            // Manejar click en notificación nativa
             if (url) {
                 browserNotif.onclick = function(event) {
                     event.preventDefault();
@@ -337,17 +241,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(url, '_blank', 'noopener,noreferrer');
                     browserNotif.close();
                 };
-            } else {
-                browserNotif.onclick = function(event) {
-                    event.preventDefault();
-                    window.focus();
-                    browserNotif.close();
-                };
             }
         }
     }
 
-    // 🔔 Obtener icono para tipo de notificación
     function getNotificationIcon(type) {
         const icons = {
             'email': '📧',
@@ -358,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return icons[type] || '🔔';
     }
 
-    // 🔔 Actualizar estado de notificaciones en la UI
     function updateNotificationStatus(status = null) {
         const statusEl = document.getElementById('notification-status');
         if (statusEl) {
@@ -372,68 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 🔔 Funciones globales para botones de notificaciones
-    window.configureNotifications = function() {
-        const command = `
-🔔 **Comandos de Configuración de Notificaciones:**
-
-**Para activar:**
-• activar emails
-• activar patentes  
-• activar papers
-
-**Para configurar búsquedas:**
-• keywords patentes: AI, machine learning
-• keywords papers: neural networks, deep learning
-• categories: cs.AI, cs.LG, cs.CV
-
-**Para verificar:**
-• status
-• debug
-
-**Para probar (con enlaces clickeables):**
-• test
-
-**Ejemplo completo:**
-1. activar papers
-2. keywords papers: artificial intelligence
-3. test
-
-💡 **Las notificaciones son clickeables** - haz click para abrir enlaces
-        `.trim();
-        
-        input.value = 'status';
-        input.focus();
-        
-        // Mostrar ayuda en el historial
-        const helpEntry = document.createElement('div');
-        helpEntry.className = 'entry p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg shadow-md';
-        helpEntry.innerHTML = `
-            <div class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-                📋 Guía de Configuración de Notificaciones
-            </div>
-            <pre class="text-sm text-yellow-700 dark:text-yellow-300 whitespace-pre-wrap">${escapeHtml(command)}</pre>
-        `;
-        historyDiv.prepend(helpEntry);
-    };
-
-    window.testNotifications = function() {
-        if (userId) {
-            input.value = 'test';
-            form.dispatchEvent(new Event('submit'));
-        } else {
-            alert('Sistema de notificaciones no inicializado');
-        }
-    };
-
-    // Solicitar permisos de notificación del navegador
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-            console.log(`Permisos de notificación: ${permission}`);
-        });
-    }
-
-    // 📋 Mostrar el resultado en el historial
+    // 📋 Renderizar resultados
     function renderResult(data) {
         let resultHtml = '';
 
@@ -456,13 +291,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'open_url':
                 {
-                // Extraer URL si viene con prefijo OPEN_URL:
                     let url = data.url;
                     if (url && url.startsWith('OPEN_URL:')) {
                         url = url.replace('OPEN_URL:', '');
                     }
 
-                // Abrir en nueva pestaña de inmediato
                     if (url) {
                         window.open(url, '_blank', 'noopener,noreferrer');
                     }
@@ -478,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 }
                 break;
-
 
             case 'download_file':
                 resultHtml = `
@@ -530,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 📁 Obtener y renderizar archivos guardados
+    // 📁 Gestión de archivos
     async function fetchFiles() {
         try {
             const response = await fetch('/files');
@@ -538,11 +370,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCodeFiles(data.code_files || []);
             updateNotesInfo(data.notes_exist || false, data.notes_count || 0);
         } catch (error) {
-            console.error("Error al cargar archivos:", error);
+            console.error("❌ Error al cargar archivos:", error);
         }
     }
 
-    // 📁 Actualizar lista lateral de archivos de código
     function updateCodeFiles(files) {
         if (!codeFilesList) return;
         
@@ -588,7 +419,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 👁️ Ver contenido de archivo
     async function viewFileContent(filename) {
         try {
             const response = await fetch(`/view/code/${filename}`);
@@ -603,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 📄 Mostrar modal con contenido del archivo
     function showFileModal(filename, content) {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
@@ -644,7 +473,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 📝 Actualizar información de notas
     function updateNotesInfo(notesExist, notesCount) {
         const notesSection = document.getElementById('notes-section');
         if (!notesSection) return;
@@ -663,50 +491,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             notesSection.innerHTML = `
                 <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">📝 Notas (${notesCount})</h3>
-                <div id="notes-list" class="space-y-2"></div>
+                <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+                    <span class="text-gray-800 dark:text-gray-100 text-sm">📝 Archivo de notas (${notesCount} notas)</span>
+                    <div class="flex space-x-1">
+                        <button onclick="viewAllNotes()" class="text-gray-600 hover:text-blue-600 text-lg" title="Ver todas las notas">👁️</button>
+                        <a href="/download/notes" download="mis_notas.txt" class="text-gray-600 hover:text-green-600 text-lg" title="Descargar notas">⬇️</a>
+                    </div>
+                </div>
                 <button onclick="createNewNote()" 
                         class="mt-2 w-full text-center p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors">
                     ➕ Crear nueva nota
                 </button>
             `;
-            fetchNotes();
         }
     }
 
-    // 📝 Traer y mostrar todas las notas
-    async function fetchNotes() {
-        const listEl = document.getElementById('notes-list');
-        if (!listEl) return;
-
-        try {
-            const response = await fetch('/view/notes');
-            if (response.ok) {
-                const data = await response.json();
-                listEl.innerHTML = '';
-
-                // Mostrar botones para ver y descargar todas las notas
-                const notesContainer = document.createElement('div');
-                notesContainer.className = "p-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex justify-between items-center";
-                
-                notesContainer.innerHTML = `
-                    <span class="text-gray-800 dark:text-gray-100 text-sm">📝 Archivo de notas (${data.notes_count} notas)</span>
-                    <div class="flex space-x-1">
-                        <button onclick="viewAllNotes()" class="text-gray-600 hover:text-blue-600 text-lg" title="Ver todas las notas">👁️</button>
-                        <a href="/download/notes" download="mis_notas.txt" class="text-gray-600 hover:text-green-600 text-lg" title="Descargar notas">⬇️</a>
-                    </div>
-                `;
-                
-                listEl.appendChild(notesContainer);
-            } else {
-                listEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 italic">Error al cargar notas</p>';
-            }
-        } catch (err) {
-            console.error("Error al cargar notas:", err);
-            listEl.innerHTML = '<p class="text-sm text-red-500 italic">Error de conexión</p>';
-        }
-    }
-
-    // 📝 Ver todas las notas en modal
+    // Funciones globales para notas
     window.viewAllNotes = async function() {
         try {
             const response = await fetch('/view/notes');
@@ -721,7 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 📝 Mostrar modal con todas las notas
     function showNotesModal(content, notesCount) {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
@@ -762,13 +561,105 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 📝 Crear nueva nota
     window.createNewNote = function() {
         const noteText = prompt("Escribe tu nota:");
         if (noteText && noteText.trim()) {
             input.value = `guardar: ${noteText.trim()}`;
             form.dispatchEvent(new Event('submit'));
         }
+    }
+
+    // Función para mostrar resultado de limpieza RMN
+    function showCleanResult(result) {
+        console.log("Result recibido:", result);
+        
+        const containerId = 'cleaned-spectra';
+        let container = document.getElementById(containerId);
+
+        if (!container) {
+            container = document.createElement('div');
+            container.id = containerId;
+            container.className = 'mt-4 space-y-4';
+            const rmnSection = document.getElementById('rmn-section');
+            if (rmnSection) {
+                rmnSection.appendChild(container);
+            }
+        }
+
+        const cleanFileName = result.cleaned_file.split('/').pop();
+        const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
+
+        const paramsStr = result.params ? 
+            Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
+            'Parámetros automáticos';
+
+        const entry = document.createElement('div');
+        entry.className = 'p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500';
+        entry.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="text-2xl">🧪</div>
+                    <div>
+                        <div class="text-green-800 dark:text-green-200 font-bold text-lg">ESPECTRO LIMPIADO</div>
+                        <div class="text-xs text-green-600 dark:text-green-400">
+                            ${new Date().toLocaleString('es-ES')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+                <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
+                        <span class="font-mono text-gray-800 dark:text-gray-200">${result.original_file}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
+                        <span class="font-mono text-green-700 dark:text-green-300">${cleanFileName}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Método:</span>
+                        <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Mejora SNR:</span>
+                        <span class="font-semibold text-green-600 dark:text-green-400">+${result.snr_improvement || '0'} dB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Parámetros:</span>
+                        <span class="text-xs text-gray-700 dark:text-gray-300">${paramsStr}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Estado:</span>
+                        <span class="text-green-600 dark:text-green-400 font-semibold">✅ Listo</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
+                <a href="/download/cleaned/${encodeURIComponent(cleanFileName)}" download
+                   class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+                    📥 Descargar CSV Limpio
+                </a>
+                
+                ${result.plot_file ? `
+                <a href="/download/plot/${encodeURIComponent(plotFileName)}" download
+                   class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                    📊 Descargar Gráfico
+                </a>
+                ` : ''}
+            </div>
+
+            <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+                <span>💡 Haz clic en "Analizar" para ver estadísticas detalladas</span>
+                <span>🕒 Procesado en ${result.processing_time || '0'}s</span>
+            </div>
+        `;
+
+        container.prepend(entry);
     }
 
     // 🔒 Escape para prevenir XSS
@@ -780,6 +671,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // Solicitar permisos de notificación
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            console.log(`Permisos de notificación: ${permission}`);
+        });
     }
 
     // 📂 Inicializar archivos y notas al cargar
@@ -795,441 +693,3 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Script inicializado correctamente');
     console.log('🔔 Sistema de notificaciones:', userId ? 'Activo' : 'Iniciando...');
 });
-// Agregar estas funciones al final del archivo script.js
-
-// ========== FUNCIONES DE GESTIÓN DE DOCUMENTOS ==========
-
-// Variables globales para documentos
-let currentDocumentFiles = {
-    templates: [],
-    data_files: [],
-    output_files: []
-};
-
-// Función para mostrar/ocultar la sección de documentos
-window.toggleDocumentSection = function() {
-    const section = document.getElementById('document-section');
-    const button = document.getElementById('document-toggle');
-    
-    if (section.classList.contains('hidden')) {
-        section.classList.remove('hidden');
-        button.textContent = '📄 Documentos ▼';
-        loadDocumentFiles();
-    } else {
-        section.classList.add('hidden');
-        button.textContent = '📄 Documentos ▶';
-    }
-};
-
-// Cargar lista de archivos de documentos
-async function loadDocumentFiles() {
-    try {
-        const response = await fetch('/files/documents');
-        const data = await response.json();
-        
-        currentDocumentFiles = {
-            templates: data.templates || [],
-            data_files: data.data_files || [],
-            output_files: data.output_files || []
-        };
-        
-        updateDocumentFilesUI();
-    } catch (error) {
-        console.error('Error cargando archivos de documentos:', error);
-    }
-}
-
-// Actualizar la UI con los archivos de documentos
-function updateDocumentFilesUI() {
-    updateTemplatesList();
-    updateDataFilesList();
-    updateOutputFilesList();
-}
-
-// Actualizar lista de plantillas
-function updateTemplatesList() {
-    const container = document.getElementById('templates-list');
-    if (!container) return;
-    
-    if (currentDocumentFiles.templates.length === 0) {
-        container.innerHTML = `
-            <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center p-4">
-                📄 No hay plantillas. Sube una plantilla para empezar.
-            </p>
-        `;
-        return;
-    }
-    
-    container.innerHTML = currentDocumentFiles.templates.map(file => `
-        <div class="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900 rounded-lg mb-2 border border-blue-200 dark:border-blue-700">
-            <div class="flex-1">
-                <div class="font-medium text-blue-800 dark:text-blue-200">${escapeHtml(file.name)}</div>
-                <div class="text-xs text-blue-600 dark:text-blue-400">
-                    ${formatFileSize(file.size)} • ${formatDate(file.modified)}
-                </div>
-            </div>
-            <div class="flex space-x-1 ml-2">
-                <button onclick="analyzeTemplate('${escapeHtml(file.name)}')" 
-                        class="text-blue-600 hover:text-blue-800 text-lg p-1" 
-                        title="Analizar plantilla">🔍</button>
-                <button onclick="createExampleData('${escapeHtml(file.name)}')" 
-                        class="text-green-600 hover:text-green-800 text-lg p-1" 
-                        title="Crear datos de ejemplo">📋</button>
-                <a href="/download/template/${encodeURIComponent(file.name)}" 
-                   class="text-gray-600 hover:text-gray-800 text-lg p-1" 
-                   title="Descargar">⬇️</a>
-                <button onclick="deleteTemplate('${escapeHtml(file.name)}')" 
-                        class="text-red-600 hover:text-red-800 text-lg p-1" 
-                        title="Eliminar">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Actualizar lista de archivos de datos
-function updateDataFilesList() {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    
-    if (currentDocumentFiles.data_files.length === 0) {
-        container.innerHTML = `
-            <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center p-4">
-                📊 No hay archivos de datos. Crea datos de ejemplo o sube un archivo.
-            </p>
-        `;
-        return;
-    }
-    
-    container.innerHTML = currentDocumentFiles.data_files.map(file => `
-        <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900 rounded-lg mb-2 border border-green-200 dark:border-green-700">
-            <div class="flex-1">
-                <div class="font-medium text-green-800 dark:text-green-200">${escapeHtml(file.name)}</div>
-                <div class="text-xs text-green-600 dark:text-green-400">
-                    ${formatFileSize(file.size)} • ${formatDate(file.modified)}
-                </div>
-            </div>
-            <div class="flex space-x-1 ml-2">
-                <button onclick="previewDataFile('${escapeHtml(file.name)}')" 
-                        class="text-green-600 hover:text-green-800 text-lg p-1" 
-                        title="Ver contenido">👁️</button>
-                <a href="/download/data/${encodeURIComponent(file.name)}" 
-                   class="text-gray-600 hover:text-gray-800 text-lg p-1" 
-                   title="Descargar">⬇️</a>
-                <button onclick="deleteDataFile('${escapeHtml(file.name)}')" 
-                        class="text-red-600 hover:text-red-800 text-lg p-1" 
-                        title="Eliminar">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Actualizar lista de documentos generados
-function updateOutputFilesList() {
-    const container = document.getElementById('output-files-list');
-    if (!container) return;
-    
-    if (currentDocumentFiles.output_files.length === 0) {
-        container.innerHTML = `
-            <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center p-4">
-                📁 No hay documentos generados aún.
-            </p>
-        `;
-        return;
-    }
-    
-    container.innerHTML = currentDocumentFiles.output_files.map(file => `
-        <div class="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg mb-2 border border-yellow-200 dark:border-yellow-700">
-            <div class="flex-1">
-                <div class="font-medium text-yellow-800 dark:text-yellow-200">${escapeHtml(file.name)}</div>
-                <div class="text-xs text-yellow-600 dark:text-yellow-400">
-                    ${formatFileSize(file.size)} • ${formatDate(file.modified)}
-                </div>
-            </div>
-            <div class="flex space-x-1 ml-2">
-                <a href="/download/output/${encodeURIComponent(file.name)}" 
-                   class="text-yellow-600 hover:text-yellow-800 text-lg p-1" 
-                   title="Descargar documento generado">📥</a>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Funciones de acción para documentos
-window.analyzeTemplate = function(filename) {
-    input.value = `analizar: ${filename}`;
-    form.dispatchEvent(new Event('submit'));
-};
-
-window.createExampleData = function(filename) {
-    input.value = `crear ejemplo datos: ${filename}`;
-    form.dispatchEvent(new Event('submit'));
-};
-
-window.deleteTemplate = async function(filename) {
-    if (!confirm(`¿Estás seguro de que quieres eliminar la plantilla "${filename}"?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/delete/template/${encodeURIComponent(filename)}`, {
-            method: 'DELETE'
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            loadDocumentFiles(); // Recargar lista
-        } else {
-            showErrorMessage(result.error || 'Error eliminando plantilla');
-        }
-    } catch (error) {
-        showErrorMessage(`Error eliminando plantilla: ${error.message}`);
-    }
-};
-
-window.deleteDataFile = async function(filename) {
-    if (!confirm(`¿Estás seguro de que quieres eliminar el archivo de datos "${filename}"?`)) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/delete/data/${encodeURIComponent(filename)}`, {
-            method: 'DELETE'
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            loadDocumentFiles(); // Recargar lista
-        } else {
-            showErrorMessage(result.error || 'Error eliminando archivo');
-        }
-    } catch (error) {
-        showErrorMessage(`Error eliminando archivo: ${error.message}`);
-    }
-};
-
-window.previewDataFile = function(filename) {
-    // Por ahora, solo mostrar comando para ver el archivo
-    input.value = `listar datos`;
-    showInfoMessage(`Para ver el contenido de ${filename}, edítalo manualmente o recrea los datos de ejemplo.`);
-};
-
-// Funciones de subida de archivos
-window.uploadTemplate = function() {
-    const fileInput = document.getElementById('template-file-input');
-    if (!fileInput.files.length) {
-        showErrorMessage('Selecciona un archivo de plantilla');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const allowedExtensions = ['.docx', '.txt', '.pdf'];
-    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-    
-    if (!allowedExtensions.includes(fileExtension)) {
-        showErrorMessage(`Formato no soportado. Use: ${allowedExtensions.join(', ')}`);
-        return;
-    }
-    
-    uploadFile('/upload/template', file, 'Subiendo plantilla...');
-};
-
-window.uploadDataFile = function() {
-    const fileInput = document.getElementById('data-file-input');
-    if (!fileInput.files.length) {
-        showErrorMessage('Selecciona un archivo de datos');
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const allowedExtensions = ['.json', '.csv', '.xlsx', '.txt'];
-    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-    
-    if (!allowedExtensions.includes(fileExtension)) {
-        showErrorMessage(`Formato no soportado. Use: ${allowedExtensions.join(', ')}`);
-        return;
-    }
-    
-    uploadFile('/upload/data', file, 'Subiendo archivo de datos...');
-};
-
-// Función genérica para subir archivos
-async function uploadFile(endpoint, file, loadingMessage) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        showInfoMessage(loadingMessage);
-        
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            if (result.next_step) {
-                showInfoMessage(`💡 Siguiente paso: ${result.next_step}`);
-            }
-            loadDocumentFiles(); // Recargar lista
-            
-            // Limpiar input
-            if (endpoint.includes('template')) {
-                document.getElementById('template-file-input').value = '';
-            } else {
-                document.getElementById('data-file-input').value = '';
-            }
-        } else {
-            showErrorMessage(result.error || 'Error subiendo archivo');
-        }
-    } catch (error) {
-        showErrorMessage(`Error subiendo archivo: ${error.message}`);
-    }
-}
-
-// Funciones de utilidad para la UI de documentos
-function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function formatDate(timestamp) {
-    return new Date(timestamp * 1000).toLocaleString('es-ES', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-// Funciones para mostrar mensajes
-function showSuccessMessage(message) {
-    const entry = document.createElement('div');
-    entry.className = 'entry p-4 bg-green-100 dark:bg-green-800 rounded-lg shadow-md border-l-4 border-green-500';
-    entry.innerHTML = `
-        <div class="text-green-800 dark:text-green-200 font-bold">
-            ✅ ${escapeHtml(message)}
-        </div>
-    `;
-    historyDiv.prepend(entry);
-    
-    // Auto-remover después de 5 segundos
-    setTimeout(() => {
-        if (entry.parentNode) {
-            entry.parentNode.removeChild(entry);
-        }
-    }, 5000);
-}
-
-function showErrorMessage(message) {
-    const entry = document.createElement('div');
-    entry.className = 'entry p-4 bg-red-100 dark:bg-red-800 rounded-lg shadow-md border-l-4 border-red-500';
-    entry.innerHTML = `
-        <div class="text-red-800 dark:text-red-200 font-bold">
-            ❌ ${escapeHtml(message)}
-        </div>
-    `;
-    historyDiv.prepend(entry);
-}
-
-function showInfoMessage(message) {
-    const entry = document.createElement('div');
-    entry.className = 'entry p-4 bg-blue-100 dark:bg-blue-800 rounded-lg shadow-md border-l-4 border-blue-500';
-    entry.innerHTML = `
-        <div class="text-blue-800 dark:text-blue-200 font-bold">
-            💡 ${escapeHtml(message)}
-        </div>
-    `;
-    historyDiv.prepend(entry);
-    
-    // Auto-remover después de 7 segundos
-    setTimeout(() => {
-        if (entry.parentNode) {
-            entry.parentNode.removeChild(entry);
-        }
-    }, 7000);
-}
-
-// Funciones para comandos rápidos de documentos
-window.showDocumentHelp = function() {
-    input.value = 'document_filler help';
-    form.dispatchEvent(new Event('submit'));
-};
-
-window.listTemplates = function() {
-    input.value = 'listar plantillas';
-    form.dispatchEvent(new Event('submit'));
-};
-
-window.listDataFiles = function() {
-    input.value = 'listar datos';
-    form.dispatchEvent(new Event('submit'));
-};
-
-// Función para crear un flujo completo de ejemplo
-window.startDocumentWalkthrough = function() {
-    const message = `
-🚀 **TUTORIAL RÁPIDO - SISTEMA DE DOCUMENTOS**
-
-**Pasos para tu primer documento:**
-
-1️⃣ **Sube una plantilla**
-   • Crea un archivo .docx con marcadores como {{nombre}}, {{empresa}}
-   • Súbelo usando el botón "Subir Plantilla"
-
-2️⃣ **Analiza la plantilla**
-   • Comando: analizar: mi_plantilla.docx
-
-3️⃣ **Crea datos de ejemplo**
-   • Comando: crear ejemplo datos: mi_plantilla.docx
-
-4️⃣ **Edita los datos**
-   • Descarga el JSON generado
-   • Edita con tus datos reales
-   • Súbelo de nuevo
-
-5️⃣ **Rellena el documento**
-   • Comando: rellenar: mi_plantilla.docx con mis_datos.json
-
-**¿Empezamos? Sube tu primera plantilla** 📄
-    `;
-    
-    showInfoMessage(message.trim());
-};
-
-// Inicializar al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    // Solo cargar si la sección existe
-    if (document.getElementById('document-section')) {
-        // No cargar automáticamente, solo cuando se abra la sección
-        console.log('📄 Sistema de documentos inicializado');
-    }
-});
-
-// Agregar funciones para manejar comandos de documentos en el envío del formulario
-const originalSubmitHandler = form.onsubmit;
-
-// Interceptar comandos de documentos para recargar archivos después
-form.addEventListener('submit', async function(e) {
-    const userInput = input.value.trim().toLowerCase();
-    
-    // Si es un comando de documentos, recargar archivos después de la respuesta
-    if (userInput.includes('rellenar:') || 
-        userInput.includes('crear ejemplo datos:') || 
-        userInput.includes('analizar:')) {
-        
-        // Esperar un poco y luego recargar
-        setTimeout(() => {
-            loadDocumentFiles();
-        }, 2000);
-    }
-});
-
-console.log('📄 Funciones de gestión de documentos cargadas');
