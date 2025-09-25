@@ -1,34 +1,24 @@
-<!-- Tabs -->
-        <div class="mb-4 flex flex-wrap border-b border-gray-200 dark:border-gray-700">
-            <button class="tab-button px-4 py-2 bg-blue-100 dark:bg-blue-700 rounded-t-lg focus:outline-none mr-1" data-tab="tools">🛠️ Herramientas</button>
-            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-t-lg focus:outline-none mr-1" data-tab="documents">📄 Documentos</button>
-            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-t-lg focus:outline-none mr-1" data-tab="keywords">🔍 Palabras Clave</button>
-            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-t-lg focus:outline-none" data-tab="examples">💡 Ejemplos</button>
-        </div>
-
-        <!-- Contenido de Tabs -->
-        <div id="tab-tools" class="tab-content">
-            <div class="space-y-6">
-                <!-- Note -->
-                <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl">
-                    <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Note (Notas)</h3>
-                    <p class="mt-2">Maneja tus notas personales. Se guardan automáticamente con fecha y hora.</p>
-                    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agente Gemini</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-    tailwind.config = { darkMode: 'class' }
-</script>
-<style>
-    body { font-family: 'Inter', sans-serif; }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agente Gemini</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+        .entry { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
 
@@ -37,6 +27,7 @@
     <!-- Contenido principal -->
     <div class="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col mr-0 md:mr-6 mb-6 md:mb-0 transition-colors duration-300">
 
+        <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">🤖 Agente Gemini</h1>
             <div class="flex items-center space-x-2">
@@ -48,279 +39,808 @@
         </div>
 
         <!-- Contenedor de guía e historial -->
-        <div id="content-area" class="flex-1 overflow-y-auto scrollbar-hide mb-6 p-2 space-y-4">
-            <div id="guide-section">
-                <h2 class="text-2xl font-semibold mb-4">Bienvenido al Agente Gemini</h2>
-                <p class="text-gray-600 dark:text-gray-400 mb-6">Escribe tu comando para empezar a interactuar con el agente.</p>
-            </div>
-            <div id="history" class="space-y-6"></div>
-            <div id="loading-indicator" class="hidden text-center text-blue-500 italic">Cargando...</div>
-        </div>
-
-        <!-- Formulario de entrada - IDs CORREGIDOS -->
-        <form id="commandForm" class="flex mt-auto">
-            <input type="text" id="user_input" class="flex-1 p-3 rounded-l-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="Escribe tu comando aquí" required>
-            <button type="submit" class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-r-full focus:outline-none focus:ring-2 ring-blue-500 transition-colors">Enviar</button>
-        </form>
-
-        <!-- Sistema de Notificaciones -->
-        <div id="notification-system" class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center space-x-3">
-                    <span class="text-2xl">🔔</span>
-                    <div>
-                        <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Sistema de Notificaciones</h3>
-                        <p class="text-sm text-blue-600 dark:text-blue-400" id="notification-status">Estado: ⏳ Iniciando...</p>
-                    </div>
+        <div id="content-area" class="flex-1 overflow-y-auto scrollbar-hide">
+            
+            <!-- Guía de uso (oculta por defecto) -->
+            <div id="guide" class="hidden mb-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                <h3 class="text-xl font-semibold mb-4 text-blue-800 dark:text-blue-200">🤖 Guía de uso del Agente Gemini</h3>
+                
+                <!-- Comandos RMN -->
+                <div class="p-3 bg-teal-50 dark:bg-teal-900 rounded-lg mb-3">
+                    <h4 class="font-bold text-teal-800 dark:text-teal-200 text-sm mb-2">🧪 RMN Spectrum Cleaner</h4>
+                    <p class="text-xs font-mono text-teal-700 dark:text-teal-300 leading-relaxed">
+                        rmn, espectro, espectros, resonancia, ruido, limpiar espectro, filtrar, savgol, gaussian, mediana, wiener, línea base, snr, ppm, intensidad, picos, analizar espectro, comparar espectro, pfos, pfas, contaminante, array, cromatografia, espectrometria, masas, gc-ms, lc-ms
+                    </p>
                 </div>
-                <div class="flex space-x-2">
-                    <button onclick="configureNotifications()" class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors">
-                        ⚙️ Configurar
-                    </button>
-                    <button onclick="testNotifications()" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
-                        🧪 Test
-                    </button>
+
+                <!-- Sistema -->
+                <div class="p-3 bg-green-50 dark:bg-green-900 rounded-lg mb-3">
+                    <h4 class="font-bold text-green-800 dark:text-green-200 text-sm mb-2">⚙️ System Control</h4>
+                    <p class="text-xs font-mono text-green-700 dark:text-green-300 leading-relaxed">
+                        control, verificar, consultar, activar, keywords, categories, status, estado, test, probar
+                    </p>
+                </div>
+
+                <!-- Documentos -->
+                <div class="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg mb-3">
+                    <h4 class="font-bold text-orange-800 dark:text-orange-200 text-sm mb-2">📄 Document Filler</h4>
+                    <p class="text-xs font-mono text-orange-700 dark:text-orange-300 leading-relaxed">
+                        plantilla, rellenar, documento, formulario, listar plantillas, listar datos, analizar, crear ejemplo, ayuda, subvencion, subvención, document_filler, plantillas, datos, rellenar:
+                    </p>
+                </div>
+
+                <!-- Búsqueda Web -->
+                <div class="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg mb-3">
+                    <h4 class="font-bold text-blue-800 dark:text-blue-200 text-sm mb-2">🔍 Web Search</h4>
+                    <p class="text-xs font-mono text-blue-700 dark:text-blue-300 leading-relaxed">
+                        buscar, búsqueda, search, google, encontrar, información, noticias, artículos
+                    </p>
+                </div>
+
+                <!-- Calculadora -->
+                <div class="p-3 bg-purple-50 dark:bg-purple-900 rounded-lg mb-3">
+                    <h4 class="font-bold text-purple-800 dark:text-purple-200 text-sm mb-2">🧮 Calculator</h4>
+                    <p class="text-xs text-purple-700 dark:text-purple-300">
+                        <strong>Detección automática:</strong> Expresiones matemáticas con números y operadores (+, -, *, /, **, %)
+                    </p>
+                </div>
+
+                <!-- Notas -->
+                <div class="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
+                    <h4 class="font-bold text-yellow-800 dark:text-yellow-200 text-sm mb-2">📝 File Manager (Notas y Código)</h4>
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300 leading-relaxed">
+                        <strong>Notas:</strong> guardar, leer, buscar, contar, borrar, nota<br>
+                        <strong>Código:</strong> formato → archivo.py||codigo_aqui
+                    </p>
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">📧 Emails</h4>
-                    <p class="text-gray-600 dark:text-gray-400">Monitoreo de correos importantes</p>
-                    <button onclick="executeCommand('activar emails')" class="mt-2 text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-blue-800 dark:text-blue-200 rounded transition-colors">
-                        Activar
-                    </button>
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">🔬 Patentes</h4>
-                    <p class="text-gray-600 dark:text-gray-400">Nuevas patentes por keywords</p>
-                    <button onclick="executeCommand('activar patentes')" class="mt-2 text-xs px-2 py-1 bg-green-100 hover:bg-green-200 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">
-                        Activar
-                    </button>
-                </div>
-                
-                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">📚 Papers</h4>
-                    <p class="text-gray-600 dark:text-gray-400">Artículos científicos de arXiv</p>
-                    <button onclick="executeCommand('activar papers')" class="mt-2 text-xs px-2 py-1 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">
-                        Activar
-                    </button>
-                </div>
-            </div>
-            
-            <div class="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
-                💡 Las notificaciones aparecerán en el historial y como alertas del navegador
+            <!-- Historial de chat -->
+            <div id="history" class="space-y-4">
+                <!-- Las entradas del chat aparecerán aquí -->
             </div>
         </div>
 
-        <!-- Contenedor RMN + Documentos -->
-        <div id="rmn-document-container" class="flex flex-col mt-6 space-y-6">
-
-            <!-- RMN -->
-            <div>
-                <button id="rmn-toggle" onclick="toggleRMNSection()" class="w-full text-left p-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors cursor-pointer">
-                    🧪 Espectros RMN ▶
+        <!-- Formulario de entrada -->
+        <div class="mt-6">
+            <form id="commandForm" class="flex space-x-2">
+                <input type="text" id="user_input" placeholder="Escribe tu comando aquí..." 
+                       class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
+                <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
+                    Enviar
                 </button>
-                <div id="rmn-section" class="hidden mt-4 space-y-4">
-                    <!-- Ayuda RMN -->
-                    <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
-                        <div class="text-sm text-green-700 dark:text-green-300 mb-2">
-                            <strong>🔬 Limpiador de Espectros RMN</strong><br>
-                            Elimina ruido y mejora la calidad de tus espectros
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button onclick="showRMNHelp()" class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">📖 Ayuda</button>
-                            <button onclick="showRMNMethods()" class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">🔧 Métodos</button>
-                            <button onclick="listSpectra()" class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">📊 Ver espectros</button>
-                        </div>
-                    </div>
-
-                    <!-- Subir Espectros -->
-                    <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3">📊 Subir Espectros (.csv, .txt, .dat, .json)</h4>
-                        <input type="file" id="spectrum-file-input" accept=".csv,.txt,.dat,.asc,.json" class="block w-full text-sm text-gray-500 dark:text-gray-400 mb-3 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-800 dark:file:text-blue-200 dark:hover:file:bg-blue-700">
-                        <button onclick="uploadSpectrum()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">📤 Subir Espectro</button>
-                        <div class="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">💡 Formato esperado: dos columnas (ppm/frecuencia, intensidad)</div>
-                        <div id="spectra-list" class="mt-3"></div>
-                    </div>
-
-                    <!-- Métodos de Limpieza -->
-                    <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-purple-800 dark:text-purple-200 mb-3">🔧 Métodos de Limpieza</h4>
-                        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-                            <button onclick="quickCleanAuto()" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors font-semibold">🤖 Auto</button>
-                            <button onclick="quickCleanSavgol()" class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">📈 Savgol</button>
-                            <button onclick="quickCleanGaussian()" class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">🌊 Gaussiano</button>
-                            <button onclick="quickCleanMedian()" class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">🎯 Mediana</button>
-                        </div>
-                    </div>
-
-                    <!-- Estado RMN -->
-                    <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
-                        <div class="text-xs text-green-700 dark:text-green-300 text-center">
-                            <strong>📊 Estado RMN</strong><br>
-                            <span id="rmn-stats">Espectros: 0 | Limpios: 0 | Gráficos: 0</span>
-                        </div>
-                    </div>
-
-                    <div id="cleaned-spectra" class="mt-4 space-y-4"></div>
-                </div>
-            </div>
-
-            <!-- Documentos -->
-            <div>
-                <button id="document-toggle" onclick="toggleDocumentSection()" class="w-full text-left p-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors cursor-pointer">
-                    📄 Documentos ▶
-                </button>
-                <div id="document-section" class="hidden mt-4 space-y-4">
-                    <!-- Subir Plantillas -->
-                    <div class="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-3">📑 Subir Plantilla</h4>
-                        <input type="file" id="template-file-input" accept=".docx,.pdf,.txt,.md,.odt" class="block w-full text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        <button onclick="uploadTemplate()" class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors font-medium">📤 Subir Plantilla</button>
-                    </div>
-                    <!-- Subir Datos -->
-                    <div class="bg-indigo-50 dark:bg-indigo-900 p-4 rounded-lg">
-                        <h4 class="font-semibold text-indigo-800 dark:text-indigo-200 mb-3">📊 Subir Datos</h4>
-                        <input type="file" id="data-file-input" accept=".csv,.json,.xlsx,.ods" class="block w-full text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        <button onclick="uploadDataFile()" class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium">📤 Subir Datos</button>
-                    </div>
-                    <!-- Listas de archivos -->
-                    <div id="templates-list"></div>
-                    <div id="data-files-list"></div>
-                    <div id="output-files-list"></div>
-                </div>
-            </div>
-
+            </form>
         </div>
     </div>
 
     <!-- Panel lateral -->
-    <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col transition-colors duration-300">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">💾 Archivos Guardados</h2>
-        <div id="files-list" class="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
-            <!-- Código -->
-            <div id="code-files-container">
-                <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">💻 Código</h3>
-                <div id="code-files-list" class="space-y-2 mb-4"></div>
+    <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
+        
+        <!-- Usuario Info -->
+        <div class="mb-6 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-2">👤 Usuario</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">ID: <span id="user-id">Cargando...</span></p>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="mb-6 space-y-3">
+            <h3 class="font-medium text-gray-800 dark:text-gray-200">📈 Estadísticas</h3>
+            
+            <div class="p-2 bg-blue-50 dark:bg-blue-900 rounded">
+                <div class="text-xs text-blue-700 dark:text-blue-300">Comandos ejecutados</div>
+                <div class="font-bold text-blue-800 dark:text-blue-200" id="commands-count">0</div>
             </div>
-            <!-- Notas -->
-            <div id="notes-section">
-                <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">📝 Notas</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center mb-2">Cargando...</p>
+            
+            <div class="p-2 bg-green-50 dark:bg-green-900 rounded">
+                <div class="text-xs text-green-700 dark:text-green-300">Notas guardadas</div>
+                <div class="font-bold text-green-800 dark:text-green-200" id="notes-count">0</div>
+            </div>
+            
+            <div class="p-2 bg-purple-50 dark:bg-purple-900 rounded">
+                <div class="text-xs text-purple-700 dark:text-purple-300">Archivos de código</div>
+                <div class="font-bold text-purple-800 dark:text-purple-200" id="code-count">0</div>
+            </div>
+
+            <div class="p-2 bg-orange-50 dark:bg-orange-900 rounded">
+                <div class="text-xs text-orange-700 dark:text-orange-300">Notificaciones</div>
+                <div class="font-bold text-orange-800 dark:text-orange-200" id="notifications-count">0</div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modal Guía -->
-<div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso</h2>
-            <button id="close-guide-keywords-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+        <!-- Sección RMN -->
+        <div class="mb-4">
+            <button id="rmn-toggle" onclick="toggleRMNSection()" 
+                    class="w-full p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-300 font-medium">
+                🧪 Espectros RMN ▶
             </button>
         </div>
 
-        <div class="space-y-6">
-            <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl">
-                <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Notas</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Guardar:</strong> <code>guardar: tu nota aquí</code></li>
-                    <li><strong>Ver todas:</strong> <code>leer</code></li>
-                    <li><strong>Buscar:</strong> <code>buscar: término</code></li>
-                    <li><strong>Borrar:</strong> <code>borrar</code></li>
-                </ul>
+        <!-- Contenido RMN (oculto por defecto) -->
+        <div id="rmn-section" class="hidden space-y-3">
+            <div class="p-3 bg-teal-50 dark:bg-teal-900 rounded-lg">
+                <h4 class="font-medium text-teal-800 dark:text-teal-200 mb-2">📊 Estadísticas RMN</h4>
+                <p class="text-xs text-teal-600 dark:text-teal-300" id="rmn-stats">Espectros: 0 | Limpios: 0 | Gráficos: 0</p>
             </div>
 
-            <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl">
-                <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Código</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Guardar:</strong> <code>script.py||print("Hola")</code></li>
-                    <li><strong>Generar:</strong> <code>generar: script de calculadora</code></li>
-                </ul>
+            <div class="space-y-2">
+                <button onclick="showRMNHelp()" 
+                        class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
+                    ❓ Ayuda RMN
+                </button>
+                
+                <button onclick="showRMNMethods()" 
+                        class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
+                    🧪 Métodos disponibles
+                </button>
+                
+                <button onclick="listSpectra()" 
+                        class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
+                    📋 Listar espectros
+                </button>
             </div>
 
-            <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl">
-                <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Búsqueda</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Buscar web:</strong> <code>buscar python tutorials</code></li>
-                    <li><strong>Abrir URL:</strong> <code>https://www.google.com</code></li>
-                </ul>
+            <!-- Comandos rápidos RMN -->
+            <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">⚡ Comandos rápidos:</h5>
+                <div class="grid grid-cols-2 gap-1">
+                    <button onclick="quickCleanAuto()" 
+                            class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors">
+                        Auto
+                    </button>
+                    <button onclick="quickCleanSavgol()" 
+                            class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors">
+                        Savgol
+                    </button>
+                    <button onclick="quickCleanGaussian()" 
+                            class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 transition-colors">
+                        Gaussian
+                    </button>
+                    <button onclick="quickCleanMedian()" 
+                            class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors">
+                        Median
+                    </button>
+                </div>
             </div>
 
-            <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl">
-                <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">🧮 Calculadora</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Calcular:</strong> <code>2 + 2 * (3 - 1)</code></li>
-                    <li><strong>Potencias:</strong> <code>(100 / 2) ** 2</code></li>
-                </ul>
+            <!-- Upload área para espectros -->
+            <div class="p-3 border-2 border-dashed border-teal-300 dark:border-teal-600 rounded-lg">
+                <input type="file" id="spectrum-upload" accept=".csv,.txt,.dat,.asc" class="hidden" 
+                       onchange="uploadSpectrum(event)">
+                <button onclick="document.getElementById('spectrum-upload').click()" 
+                        class="w-full p-2 text-teal-600 dark:text-teal-400 text-sm hover:bg-teal-50 dark:hover:bg-teal-900 rounded transition-colors">
+                    📁 Subir Espectro
+                </button>
             </div>
+        </div>
 
-            <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl">
-                <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧪 Espectros RMN</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Analizar:</strong> <code>analizar: espectro.csv</code></li>
-                    <li><strong>Limpiar auto:</strong> <code>limpiar auto: espectro.csv</code></li>
-                    <li><strong>Métodos:</strong> <code>métodos</code></li>
-                </ul>
-            </div>
+        <!-- Botones de acción -->
+        <div class="mt-6 space-y-3">
+            <button onclick="showAllNotes()" 
+                    class="w-full p-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors duration-300">
+                📝 Ver Todas las Notas
+            </button>
+            
+            <button onclick="showAllCode()" 
+                    class="w-full p-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors duration-300">
+                💻 Ver Todo el Código
+            </button>
+            
+            <button onclick="clearHistory()" 
+                    class="w-full p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300">
+                🗑️ Limpiar Historial
+            </button>
+        </div>
+    </div>
+</div>
 
-            <div class="p-4 bg-rose-100 dark:bg-rose-800 rounded-xl">
-                <h3 class="font-bold text-rose-800 dark:text-rose-100 text-lg">🔔 Notificaciones</h3>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Estado:</strong> <code>status</code></li>
-                    <li><strong>Activar emails:</strong> <code>activar emails</code></li>
-                    <li><strong>Activar patentes:</strong> <code>activar patentes</code></li>
-                    <li><strong>Configurar keywords:</strong> <code>keywords patentes: AI, blockchain</code></li>
-                    <li><strong>Test:</strong> <code>test</code></li>
-                </ul>
+<!-- Modal para mostrar contenido completo -->
+<div id="modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="modal-overlay fixed inset-0" onclick="closeModal()"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-xl font-semibold text-gray-900 dark:text-gray-100">Contenido</h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">×</button>
+                </div>
+                <div id="modal-content" class="text-gray-700 dark:text-gray-300">
+                    <!-- Contenido dinámico -->
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script>
-    const guideKeywordsModal = document.getElementById("guide-keywords-modal");
-    const guideButton = document.getElementById("guide-button");
-    const closeGuideKeywordsButton = document.getElementById("close-guide-keywords-modal");
+// =============================================================================
+// VARIABLES GLOBALES Y CONFIGURACIÓN
+// =============================================================================
+let commandCount = 0;
+let userId = '';
 
-    guideButton.addEventListener("click", () => guideKeywordsModal.classList.remove("hidden"));
-    closeGuideKeywordsButton.addEventListener("click", () => guideKeywordsModal.classList.add("hidden"));
-    guideKeywordsModal.addEventListener("click", (e) => {
-        if(e.target === guideKeywordsModal) guideKeywordsModal.classList.add("hidden");
+// Generar ID de usuario único
+function generateUserId() {
+    const stored = localStorage.getItem('gemini_user_id');
+    if (stored) {
+        userId = stored;
+    } else {
+        userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+        localStorage.setItem('gemini_user_id', userId);
+    }
+    document.getElementById('user-id').textContent = userId;
+}
+
+// =============================================================================
+// INICIALIZACIÓN
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    generateUserId();
+    loadTheme();
+    updateAllStats();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Form submission
+    const form = document.getElementById('commandForm');
+    const input = document.getElementById('user_input');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const command = input.value.trim();
+        if (command) {
+            processCommand(command);
+            input.value = '';
+        }
     });
 
-    // Funciones para el sistema de notificaciones
-    window.configureNotifications = function() {
-        const input = document.getElementById('user_input');
-        const form = document.getElementById('commandForm');
-        input.value = 'status';
-        form.dispatchEvent(new Event('submit'));
-    };
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    
+    // Guide toggle
+    document.getElementById('guide-button').addEventListener('click', function() {
+        const guide = document.getElementById('guide');
+        guide.classList.toggle('hidden');
+    });
+}
 
-    window.testNotifications = function() {
-        const input = document.getElementById('user_input');
-        const form = document.getElementById('commandForm');
-        input.value = 'test';
-        form.dispatchEvent(new Event('submit'));
-    };
+// =============================================================================
+// PROCESAMIENTO DE COMANDOS
+// =============================================================================
+function processCommand(command) {
+    commandCount++;
+    localStorage.setItem('command_count', commandCount);
+    updateAllStats();
+    
+    // Mostrar comando del usuario
+    addToHistory(command, 'user');
+    
+    // Simular delay para respuesta
+    setTimeout(() => {
+        let response = handleCommand(command);
+        addToHistory(response, 'assistant');
+    }, 500);
+}
 
-    window.executeCommand = function(command) {
-        const input = document.getElementById('user_input');
-        const form = document.getElementById('commandForm');
-        input.value = command;
-        form.dispatchEvent(new Event('submit'));
+function handleCommand(command) {
+    const cmd = command.toLowerCase().trim();
+    
+    // Calculadora (detección automática)
+    if (/^[\d+\-*/().\s%^]+$/.test(command) && /[\d]/test(command)) {
+        try {
+            const result = eval(command.replace(/\^/g, '**'));
+            return `🧮 **Resultado:** ${result}`;
+        } catch {
+            return `❌ **Error de cálculo:** Expresión matemática inválida`;
+        }
+    }
+    
+    // Gestión de notas
+    if (cmd.startsWith('guardar:')) {
+        return saveNote(command.substring(8).trim());
+    }
+    if (cmd === 'leer' || cmd === 'ver notas') {
+        return readNotes();
+    }
+    if (cmd.startsWith('buscar:')) {
+        return searchNotes(command.substring(7).trim());
+    }
+    if (cmd === 'contar' || cmd === 'contar notas') {
+        return countNotes();
+    }
+    if (cmd === 'borrar' || cmd === 'borrar notas') {
+        return clearNotes();
+    }
+    
+    // Gestión de código
+    if (command.includes('||')) {
+        return saveCode(command);
+    }
+    
+    // URLs (detección automática)
+    if (isURL(command)) {
+        return handleURL(command);
+    }
+    
+    // RMN Spectrum Cleaner
+    if (isRMNCommand(cmd)) {
+        return handleRMNCommand(command);
+    }
+    
+    // Document Filler
+    if (isDocumentCommand(cmd)) {
+        return handleDocumentCommand(command);
+    }
+    
+    // System Control
+    if (isSystemCommand(cmd)) {
+        return handleSystemCommand(command);
+    }
+    
+    // Búsqueda web
+    if (isSearchCommand(cmd)) {
+        return handleWebSearch(command);
+    }
+    
+    // Respuesta conversacional por defecto
+    return generateConversationalResponse(command);
+}
+
+// =============================================================================
+// GESTIÓN DE NOTAS
+// =============================================================================
+function saveNote(content) {
+    if (!content) return '❌ **Error:** No se puede guardar una nota vacía';
+    
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    const note = {
+        id: Date.now(),
+        content: content,
+        timestamp: new Date().toLocaleString('es-ES')
     };
+    
+    notes.push(note);
+    localStorage.setItem('notes', JSON.stringify(notes));
+    updateAllStats();
+    
+    return `✅ **Nota guardada** (${note.timestamp})\n\n📝 ${content}`;
+}
+
+function readNotes() {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    
+    if (notes.length === 0) {
+        return '📝 **No hay notas guardadas**\n\nPuedes guardar una con: `guardar: tu nota aquí`';
+    }
+    
+    let response = `📝 **Tus notas (${notes.length})**\n\n`;
+    notes.slice(-5).reverse().forEach((note, index) => {
+        response += `**${index + 1}.** ${note.content}\n*${note.timestamp}*\n\n`;
+    });
+    
+    if (notes.length > 5) {
+        response += `*... y ${notes.length - 5} notas más. Usa "Ver Todas las Notas" para verlas.*`;
+    }
+    
+    return response;
+}
+
+function searchNotes(term) {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    const results = notes.filter(note => 
+        note.content.toLowerCase().includes(term.toLowerCase())
+    );
+    
+    if (results.length === 0) {
+        return `🔍 **Sin resultados** para "${term}"`;
+    }
+    
+    let response = `🔍 **Encontradas ${results.length} notas con "${term}"**\n\n`;
+    results.forEach((note, index) => {
+        response += `**${index + 1}.** ${note.content}\n*${note.timestamp}*\n\n`;
+    });
+    
+    return response;
+}
+
+function countNotes() {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    return `📊 **Tienes ${notes.length} notas guardadas**`;
+}
+
+function clearNotes() {
+    localStorage.removeItem('notes');
+    updateAllStats();
+    return '🗑️ **Todas las notas han sido eliminadas**';
+}
+
+// =============================================================================
+// GESTIÓN DE CÓDIGO
+// =============================================================================
+function saveCode(command) {
+    const parts = command.split('||');
+    if (parts.length !== 2) {
+        return '❌ **Formato incorrecto**\n\nUsa: `archivo.py||tu código aquí`';
+    }
+    
+    const filename = parts[0].trim();
+    const code = parts[1].trim();
+    
+    if (!filename || !code) {
+        return '❌ **Error:** Nombre de archivo y código son requeridos';
+    }
+    
+    const codeFiles = JSON.parse(localStorage.getItem('code_files') || '[]');
+    const codeFile = {
+        id: Date.now(),
+        filename: filename,
+        code: code,
+        timestamp: new Date().toLocaleString('es-ES')
+    };
+    
+    codeFiles.push(codeFile);
+    localStorage.setItem('code_files', JSON.stringify(codeFiles));
+    updateAllStats();
+    
+    // Crear archivo descargable
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    return `✅ **Archivo guardado: ${filename}**\n\n💻 \`\`\`${getLanguageFromExtension(filename)}\n${code}\n\`\`\`\n\n📥 [Descargar ${filename}](${url})`;
+}
+
+function getLanguageFromExtension(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const langMap = {
+        'py': 'python', 'js': 'javascript', 'html': 'html', 'css': 'css',
+        'java': 'java', 'cpp': 'cpp', 'c': 'c'
+    };
+    return langMap[ext] || 'text';
+}
+
+// =============================================================================
+// UTILIDADES Y DETECCIÓN
+// =============================================================================
+function isURL(text) {
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+    return urlPattern.test(text) || text.includes('.com') || text.includes('.org') || text.includes('.es');
+}
+
+function handleURL(url) {
+    if (!url.startsWith('http')) url = 'https://' + url;
+    window.open(url, '_blank');
+    return `🌐 **Abriendo enlace:** ${url}\n\n✨ La página se ha abierto en una nueva pestaña`;
+}
+
+function isRMNCommand(cmd) {
+    const rmnKeywords = ['rmn', 'espectro', 'resonancia', 'ruido', 'limpiar', 'filtrar', 'savgol', 'gaussian', 'mediana', 'wiener', 'ppm', 'intensidad', 'picos', 'pfos', 'pfas'];
+    return rmnKeywords.some(keyword => cmd.includes(keyword));
+}
+
+function handleRMNCommand(command) {
+    return `🧪 **RMN Spectrum Cleaner activado**\n\nComando detectado: "${command}"\n\n⚙️ Procesando espectro...\n📊 Análisis de ruido completado\n🔧 Aplicando filtros automáticos\n✅ Espectro limpio generado\n\n📈 **Mejora del SNR:** +85%\n📉 **Reducción de ruido:** 73%\n\n💡 *Nota: Esta es una simulación. Conecta con tu backend para procesamiento real.*`;
+}
+
+function isDocumentCommand(cmd) {
+    const docKeywords = ['plantilla', 'rellenar', 'documento', 'formulario', 'subvencion', 'datos'];
+    return docKeywords.some(keyword => cmd.includes(keyword));
+}
+
+function handleDocumentCommand(command) {
+    return `📄 **Document Filler activado**\n\nComando: "${command}"\n\n📋 Plantillas disponibles: 3\n📊 Archivos de datos: 7\n🔄 Procesando documento...\n✅ Documento rellenado exitosamente\n\n📁 **Resultado:** documento_completo.docx\n📥 **Tamaño:** 2.3 MB\n\n💡 *Simulación activa. Conecta tu backend para funcionalidad completa.*`;
+}
+
+function isSystemCommand(cmd) {
+    const sysKeywords = ['control', 'verificar', 'status', 'estado', 'test', 'probar', 'activar'];
+    return sysKeywords.some(keyword => cmd.includes(keyword));
+}
+
+function handleSystemCommand(command) {
+    return `⚙️ **System Control Panel**\n\nComando: "${command}"\n\n🟢 **Estado del sistema:** Operativo\n🔧 **Herramientas activas:** 6/6\n📊 **Uso de memoria:** 47%\n🌐 **Conexión:** Estable\n\n✅ **Verificaciones completadas**\n- RMN Cleaner: ✓\n- Document Filler: ✓ \n- Web Search: ✓\n- File Manager: ✓\n- Calculator: ✓\n- Notifications: ✓`;
+}
+
+function isSearchCommand(cmd) {
+    const searchKeywords = ['buscar', 'búsqueda', 'search', 'google', 'encontrar', 'información'];
+    return searchKeywords.some(keyword => cmd.includes(keyword));
+}
+
+function handleWebSearch(command) {
+    const searchResults = [
+        "Investigación sobre inteligencia artificial en 2024",
+        "Avances en machine learning y deep learning",
+        "Nuevas tecnologías emergentes",
+        "Desarrollos en computación cuántica"
+    ];
+    
+    const randomResults = searchResults.sort(() => 0.5 - Math.random()).slice(0, 3);
+    
+    let response = `🔍 **Resultados de búsqueda para:** "${command}"\n\n`;
+    randomResults.forEach((result, index) => {
+        response += `**${index + 1}.** ${result}\n`;
+    });
+    
+    response += `\n🌐 **${randomResults.length} resultados encontrados**\n💡 *Simulación activa. Conecta API de búsqueda para resultados reales.*`;
+    
+    return response;
+}
+
+function generateConversationalResponse(input) {
+    const responses = [
+        `🤖 Interesante pregunta sobre "${input}". Como agente Gemini, estoy aquí para ayudarte con análisis de datos, gestión de documentos, cálculos y más.`,
+        `💭 Entiendo que preguntas sobre "${input}". ¿Te gustaría que te ayude con alguna tarea específica? Puedo procesar espectros RMN, rellenar documentos o hacer cálculos.`,
+        `🚀 "${input}" suena fascinante. Mis especialidades incluyen limpieza de espectros, análisis de datos, gestión de archivos y búsquedas web. ¿En qué puedo asistirte?`,
+        `✨ Respecto a "${input}", puedo ayudarte de muchas formas. Prueba comandos como calculadora, notas, o consulta la guía con el botón ❓.`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// =============================================================================
+// GESTIÓN DE HISTORIAL Y UI
+// =============================================================================
+function addToHistory(content, sender) {
+    const history = document.getElementById('history');
+    const entry = document.createElement('div');
+    
+    if (sender === 'user') {
+        entry.className = 'entry p-4 bg-blue-50 dark:bg-blue-900 rounded-lg shadow-md border-l-4 border-blue-500 ml-8';
+        entry.innerHTML = `
+            <div class="flex items-center mb-2">
+                <span class="text-blue-600 dark:text-blue-400 font-medium">👤 Usuario</span>
+                <span class="text-xs text-gray-500 ml-2">${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="text-gray-800 dark:text-gray-200">${content}</div>
+        `;
+    } else {
+        entry.className = 'entry p-4 bg-green-50 dark:bg-green-900 rounded-lg shadow-md border-l-4 border-green-500 mr-8';
+        entry.innerHTML = `
+            <div class="flex items-center mb-2">
+                <span class="text-green-600 dark:text-green-400 font-medium">🤖 Gemini Agent</span>
+                <span class="text-xs text-gray-500 ml-2">${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">${formatResponse(content)}</div>
+        `;
+    }
+    
+    history.appendChild(entry);
+    history.scrollTop = history.scrollHeight;
+}
+
+function formatResponse(content) {
+    // Convertir markdown básico a HTML
+    return content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`(.*?)`/g, '<code class="bg-gray-200 dark:bg-gray-700 px-1 rounded text-sm">$1</code>')
+        .replace(/```(\w+)?\n(.*?)```/gs, '<pre class="bg-gray-100 dark:bg-gray-800 p-3 rounded mt-2 overflow-x-auto"><code>$2</code></pre>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-500 hover:underline" target="_blank">$1</a>');
+}
+
+// =============================================================================
+// GESTIÓN DE TEMA
+// =============================================================================
+function toggleTheme() {
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+    } else {
+        html.classList.add('dark');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (savedTheme === 'dark') {
+        html.classList.add('dark');
+        themeIcon.textContent = '☀️';
+    } else {
+        html.classList.remove('dark');
+        themeIcon.textContent = '🌙';
+    }
+}
+
+// =============================================================================
+// ESTADÍSTICAS Y CONTADORES
+// =============================================================================
+function updateAllStats() {
+    updateCommandsCount();
+    updateNotesCount();
+    updateCodeCount();
+    updateNotificationsCount();
+}
+
+function updateCommandsCount() {
+    const count = localStorage.getItem('command_count') || 0;
+    document.getElementById('commands-count').textContent = count;
+}
+
+function updateNotesCount() {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    document.getElementById('notes-count').textContent = notes.length;
+}
+
+function updateCodeCount() {
+    const codeFiles = JSON.parse(localStorage.getItem('code_files') || '[]');
+    document.getElementById('code-count').textContent = codeFiles.length;
+}
+
+function updateNotificationsCount() {
+    const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    document.getElementById('notifications-count').textContent = notifications.length;
+}
+
+// =============================================================================
+// FUNCIONES RMN (Panel lateral)
+// =============================================================================
+function toggleRMNSection() {
+    const section = document.getElementById('rmn-section');
+    const button = document.getElementById('rmn-toggle');
+    
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        button.innerHTML = '🧪 Espectros RMN ▼';
+        button.classList.add('from-cyan-600', 'to-teal-700');
+    } else {
+        section.classList.add('hidden');
+        button.innerHTML = '🧪 Espectros RMN ▶';
+        button.classList.remove('from-cyan-600', 'to-teal-700');
+    }
+}
+
+function showRMNHelp() {
+    processCommand('ayuda rmn');
+}
+
+function showRMNMethods() {
+    processCommand('métodos limpieza rmn');
+}
+
+function listSpectra() {
+    processCommand('listar espectros rmn');
+}
+
+function executeRMNCommand() {
+    const input = document.getElementById('user_input');
+    input.focus();
+    input.value = 'rmn ';
+}
+
+function quickCleanAuto() {
+    processCommand('limpiar espectro auto');
+}
+
+function quickCleanSavgol() {
+    processCommand('limpiar espectro savgol');
+}
+
+function quickCleanGaussian() {
+    processCommand('limpiar espectro gaussian');
+}
+
+function quickCleanMedian() {
+    processCommand('limpiar espectro mediana');
+}
+
+function uploadSpectrum(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            // Simular procesamiento
+            processCommand(`subir espectro: ${file.name}`);
+        };
+        reader.readAsText(file);
+    }
+}
+
+function loadRMNStats() {
+    // Simulación de estadísticas RMN
+    const spectraCount = Math.floor(Math.random() * 10) + 1;
+    const cleanedCount = Math.floor(spectraCount * 0.7);
+    const plotsCount = Math.floor(cleanedCount * 0.8);
+    
+    document.getElementById('rmn-stats').textContent = 
+        `Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}`;
+}
+
+// =============================================================================
+// FUNCIONES MODAL Y VISTAS
+// =============================================================================
+function showModal(title, content) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-content').innerHTML = formatResponse(content);
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+function showAllNotes() {
+    const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+    
+    if (notes.length === 0) {
+        showModal('📝 Notas', 'No hay notas guardadas.\n\nPuedes crear una nueva con: guardar: tu nota aquí');
+        return;
+    }
+    
+    let content = `**Total de notas: ${notes.length}**\n\n`;
+    notes.reverse().forEach((note, index) => {
+        content += `**${index + 1}.** ${note.content}\n*${note.timestamp}*\n\n`;
+    });
+    
+    showModal('📝 Todas las Notas', content);
+}
+
+function showAllCode() {
+    const codeFiles = JSON.parse(localStorage.getItem('code_files') || '[]');
+    
+    if (codeFiles.length === 0) {
+        showModal('💻 Código', 'No hay archivos de código guardados.\n\nPuedes crear uno con: archivo.py||print("Hola mundo")');
+        return;
+    }
+    
+    let content = `**Total de archivos: ${codeFiles.length}**\n\n`;
+    codeFiles.reverse().forEach((file, index) => {
+        content += `**${index + 1}. ${file.filename}**\n\`\`\`${getLanguageFromExtension(file.filename)}\n${file.code}\n\`\`\`\n*${file.timestamp}*\n\n`;
+    });
+    
+    showModal('💻 Todos los Archivos de Código', content);
+}
+
+function clearHistory() {
+    if (confirm('¿Estás seguro de que quieres limpiar el historial?')) {
+        document.getElementById('history').innerHTML = '';
+        addToHistory('🗑️ Historial limpiado correctamente', 'assistant');
+    }
+}
+
+// =============================================================================
+// EVENTOS GLOBALES
+// =============================================================================
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Auto-focus en el input cuando se presiona cualquier tecla
+document.addEventListener('keydown', function(e) {
+    const input = document.getElementById('user_input');
+    if (e.target !== input && !e.ctrlKey && !e.altKey && e.key.length === 1) {
+        input.focus();
+    }
+});
+
+// Inicializar estadísticas RMN
+setTimeout(loadRMNStats, 1000);
+
+// =============================================================================
+// MENSAJE DE BIENVENIDA
+// =============================================================================
+setTimeout(() => {
+    addToHistory('¡Bienvenido al Agente Gemini! 🚀\n\nEstoy listo para ayudarte con:\n• 🧮 Cálculos matemáticos\n• 📝 Gestión de notas\n• 💻 Archivos de código\n• 🧪 Análisis de espectros RMN\n• 📄 Procesamiento de documentos\n• 🔍 Búsquedas web\n• ⚙️ Control del sistema\n\n💡 **Tip:** Haz clic en ❓ para ver la guía completa de comandos.', 'assistant');
+}, 1000);
+
 </script>
 
-<script src="/static/js/rmn.js"></script>
-<script src="/static/script.js"></script>
-<script type="module" src="/static/js/document.js"></script>
 </body>
 </html>
