@@ -20,17 +20,18 @@ TOOLS = {
     "web_open": "tools.web_open",
     "code_gen": "tools.code_gen",
     "notifications": "tools.notifications",
-    "document_filler": "tools.document_filler"
+    "document_filler": "tools.document_filler",
+    "rmn_spectrum_cleaner": "tools.rmn_spectrum_cleaner"  # Nueva herramienta
 }
 
 def ask_gemini_for_tool(prompt: str) -> str:
     prompt_lower = prompt.lower()  # <-- definir al inicio
-    
+
     # Si el prompt es una URL, usar web_open automáticamente
     url_pattern = r"(https?://[^\s]+)"
     if re.match(url_pattern, prompt.strip()):
         return "web_open"
-    
+
     # Palabras clave de generación de código
     code_gen_keywords = [
         "generar", "genera", "crear", "crea", "escribir", "escribe",
@@ -59,7 +60,6 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "status", "estado", "test", "probar"
     ]
 
-
     # Palabras clave de documentos
     document_keywords = [
         "plantilla", "rellenar", "documento", "formulario",
@@ -68,7 +68,21 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "document_filler", "plantillas", "datos", "rellenar:"
     ]
 
-    # Revisar documentos PRIMERO (antes que notificaciones para evitar conflictos)
+    # Palabras clave de espectros RMN - NUEVA SECCIÓN
+    rmn_keywords = [
+        "rmn", "espectro", "espectros", "resonancia magnética", "resonancia magnetica",
+        "ruido", "limpiar espectro", "filtrar", "savgol", "gaussian", "mediana",
+        "wiener", "línea base", "linea base", "snr", "señal ruido",
+        "ppm", "intensidad", "picos", "analizar espectro", "limpiar auto",
+        "comparar espectro", "exportar espectro", "nmr", "spectrum", "noise",
+        "baseline", "peaks", "chemical shift", "listar espectros"
+    ]
+
+    # Revisar espectros RMN PRIMERO (nueva herramienta)
+    if any(keyword in prompt_lower for keyword in rmn_keywords):
+        return "rmn_spectrum_cleaner"
+
+    # Revisar documentos SEGUNDO (antes que notificaciones para evitar conflictos)
     if any(keyword in prompt_lower for keyword in document_keywords):
         return "document_filler"
 
@@ -93,6 +107,7 @@ def ask_gemini_for_tool(prompt: str) -> str:
         f"Si necesita generar/crear código usa 'code_gen'. "
         f"Si es para guardar código existente usa 'save_code'. "
         f"Si es para documentos/plantillas usa 'document_filler'. "
+        f"Si es para espectros RMN o análisis químico usa 'rmn_spectrum_cleaner'. "
         f"Responde SOLO con el nombre exacto de la herramienta."
     )
     response = model.generate_content(question)

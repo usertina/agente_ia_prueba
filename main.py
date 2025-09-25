@@ -434,6 +434,209 @@ async def ask(request: Request, user_input: str = Form(...)):
             "input": user_input,
             "tool": "error"
         }, status_code=500)
+    
+# Añade esto a main.py después de los otros endpoints
+
+# Directorios para espectros RMN
+RMN_INPUT_DIR = "rmn_spectra/input"
+RMN_OUTPUT_DIR = "rmn_spectra/output" 
+RMN_PLOTS_DIR = "rmn_spectra/plots"
+
+for dir_path in [RMN_INPUT_DIR, RMN_OUTPUT_DIR, RMN_PLOTS_DIR]:
+    os.makedirs(dir_path, exist_ok=True)
+
+@app.post("/upload/spectrum")
+async def upload_spectrum(file: UploadFile = File(...)):
+    """Subir espectro RMN"""
+    try:
+        # Validar formato
+        allowed_extensions = ['.csv', '.txt', '.dat', '.asc', '.json']
+        file_extension = '.' + file.filename.split('.')[-1].lower()
+
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Formato no soportado. Use: {', '.join(allowed_extensions)}"
+            )
+
+        # Guardar archivo
+        file_path = os.path.join(RMN_INPUT_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        return JSONResponse({
+            "success": True,
+            "message": f"Espectro {file.filename} subido correctamente",
+            "filename": file.filename,
+            "location": f"{RMN_INPUT_DIR}/{file.filename}",
+            "next_step": f"Analiza el espectro con: 'analizar: {file.filename}'"
+        })
+
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.get("/files/spectra")
+async def get_spectra_files():
+    """Obtener lista de archivos de espectros"""
+    try:
+        spectra = []
+        cleaned = []
+        plots = []
+
+        # Listar espectros originales
+        if os.path.exists(RMN_INPUT_DIR):
+            for file in os.listdir(RMN_INPUT_DIR):
+                if any(file.endswith(ext) for ext in ['.csv', '.txt', '.dat', '.asc', '.json']):
+                    file_path = os.path.join(RMN_INPUT_DIR, file)
+                    spectra.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'cleaned'
+                    })
+
+        # Listar gráficos generados
+        if os.path.exists(RMN_PLOTS_DIR):
+            for file in os.listdir(RMN_PLOTS_DIR):
+                if file.endswith('.png'):
+                    file_path = os.path.join(RMN_PLOTS_DIR, file)
+                    plots.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'plot'
+                    })
+
+        return JSONResponse({
+            "spectra": spectra,
+            "cleaned": cleaned,
+            "plots": plots,
+            "total": len(spectra) + len(cleaned) + len(plots)
+        })
+
+    except Exception as e:
+        return JSONResponse({
+            "spectra": [],
+            "cleaned": [],
+            "plots": [],
+            "total": 0,
+            "error": str(e)
+        })
+
+
+@app.get("/download/spectrum/{filename}")
+async def download_spectrum(filename: str):
+    """Descargar espectro original"""
+    file_path = os.path.join(RMN_INPUT_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el espectro {filename}")
+
+
+@app.get("/download/cleaned/{filename}")
+async def download_cleaned_spectrum(filename: str):
+    """Descargar espectro limpio"""
+    file_path = os.path.join(RMN_OUTPUT_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
+
+
+@app.get("/download/plot/{filename}")
+async def download_plot(filename: str):
+    """Descargar gráfico de análisis"""
+    file_path = os.path.join(RMN_PLOTS_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico {filename}")
+
+
+@app.delete("/delete/spectrum/{filename}")
+async def delete_spectrum(filename: str):
+    """Eliminar espectro original"""
+    try:
+        file_path = os.path.join(RMN_INPUT_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Espectro {filename} eliminado correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró el espectro {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.delete("/delete/cleaned/{filename}")
+async def delete_cleaned_spectrum(filename: str):
+    """Eliminar espectro limpio"""
+    try:
+        file_path = os.path.join(RMN_OUTPUT_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Espectro limpio {filename} eliminado correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+    
+
+@app.get("/list/cleaned")
+async def list_cleaned_spectra():
+    """Listar espectros limpios disponibles"""
+    try:
+        cleaned = []
+        if os.path.exists(RMN_OUTPUT_DIR):
+            for file in os.listdir(RMN_OUTPUT_DIR):
+                if file.endswith('.csv'):
+                    file_path = os.path.join(RMN_OUTPUT_DIR, file)
+                    cleaned.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'spectrum'
+                    })
+        return JSONResponse({
+            "success": True,
+            "cleaned": cleaned,
+            "count": len(cleaned)
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "cleaned": [],
+            "count": 0
+        }, status_code=500)
 
 
 # -------------------- Archivos y Notas --------------------

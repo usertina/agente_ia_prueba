@@ -79,8 +79,6 @@
             </div>
         </div>
 
-    <!-- Agregar esta sección después de la sección de notificaciones en tu sidebar -->
-
 <!-- Sección de Documentos -->
 <div class="mb-6">
     <button id="document-toggle" onclick="toggleDocumentSection()" 
@@ -248,6 +246,171 @@
                 </div>
             </div>
         </div>
+<!-- Sección de Espectros RMN -->
+<div class="mb-6">
+    <button id="rmn-toggle" onclick="toggleRMNSection()" 
+            class="w-full text-left p-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors cursor-pointer">
+        🧪 Espectros RMN ▶
+    </button>
+
+    <div id="rmn-section" class="hidden mt-4 space-y-4">
+        <!-- Ayuda rápida RMN -->
+        <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
+            <div class="text-sm text-green-700 dark:text-green-300 mb-2">
+                <strong>🔬 Limpiador de Espectros RMN</strong><br>
+                Elimina ruido y mejora la calidad de tus espectros
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="showRMNHelp()" 
+                        class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">
+                    📖 Ayuda
+                </button>
+                <button onclick="showRMNMethods()" 
+                        class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">
+                    🔧 Métodos
+                </button>
+                <button onclick="listSpectra()" 
+                        class="text-xs px-2 py-1 bg-green-200 hover:bg-green-300 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">
+                    📊 Ver espectros
+                </button>
+            </div>
+        </div>
+
+        <!-- Subir Espectros -->
+        <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3">📊 Subir Espectros (.csv, .txt, .dat, .json)</h4>
+
+            <div class="mb-3">
+                <input type="file" id="spectrum-file-input" 
+                       accept=".csv,.txt,.dat,.asc,.json" 
+                       class="block w-full text-sm text-gray-500 dark:text-gray-400
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-full file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-blue-50 file:text-blue-700
+                              hover:file:bg-blue-100
+                              dark:file:bg-blue-800 dark:file:text-blue-200
+                              dark:hover:file:bg-blue-700">
+            </div>
+
+            <button onclick="uploadSpectrum()" 
+                    class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
+                📤 Subir Espectro
+            </button>
+
+            <div class="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">
+                💡 Formato esperado: dos columnas (ppm/frecuencia, intensidad)
+            </div>
+
+            <div id="spectra-list" class="mt-3">
+                <!-- Los espectros se cargan dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Métodos de Limpieza -->
+        <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
+            <h4 class="font-semibold text-purple-800 dark:text-purple-200 mb-3">🔧 Métodos de Limpieza</h4>
+
+            <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+                <button onclick="quickCleanAuto()" 
+                        class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors font-semibold">
+                    🤖 Auto
+                </button>
+                <button onclick="quickCleanSavgol()" 
+                        class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">
+                    📈 Savgol
+                </button>
+                <button onclick="quickCleanGaussian()" 
+                        class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">
+                    🌊 Gaussiano
+                </button>
+                <button onclick="quickCleanMedian()" 
+                        class="px-2 py-1 bg-purple-200 hover:bg-purple-300 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">
+                    🎯 Mediana
+                </button>
+            </div>
+
+            <div class="text-xs text-purple-700 dark:text-purple-300 space-y-1">
+                <div><strong>Auto:</strong> Selecciona el mejor método automáticamente</div>
+                <div><strong>Savgol:</strong> Preserva la forma de los picos</div>
+                <div><strong>Gaussiano:</strong> Suavizado general efectivo</div>
+                <div><strong>Mediana:</strong> Elimina picos de ruido</div>
+            </div>
+        </div>
+
+        <!-- Comandos Rápidos RMN -->
+        <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">⚡ Comandos Rápidos RMN</h4>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="executeRMNCommand('listar espectros')"
+                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">
+                    📊 Listar espectros
+                </button>
+                <button onclick="executeRMNCommand('métodos')"
+                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">
+                    🔧 Ver métodos
+                </button>
+            </div>
+
+            <div class="mt-3 text-xs text-gray-600 dark:text-gray-400">
+                <strong>📝 Ejemplos de comandos:</strong><br>
+                • <code>analizar: mi_espectro.csv</code><br>
+                • <code>limpiar auto: mi_espectro.csv</code><br>
+                • <code>comparar: mi_espectro.csv</code><br>
+                • <code>exportar: mi_espectro.csv formato json</code>
+            </div>
+        </div>
+
+        <!-- Casos de Uso -->
+        <div class="bg-teal-50 dark:bg-teal-900 p-4 rounded-lg">
+            <h4 class="font-semibold text-teal-800 dark:text-teal-200 mb-3">🎯 Casos de Uso</h4>
+
+            <div class="text-xs text-teal-700 dark:text-teal-300 space-y-2">
+                <div class="flex items-start">
+                    <span class="mr-2">🔬</span>
+                    <div>
+                        <strong>Análisis Cuantitativo:</strong><br>
+                        Mejora la precisión en la integración de picos
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <span class="mr-2">🧬</span>
+                    <div>
+                        <strong>Identificación de Compuestos:</strong><br>
+                        Elimina ruido para mejor identificación de señales
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <span class="mr-2">📊</span>
+                    <div>
+                        <strong>Machine Learning:</strong><br>
+                        Prepara datos limpios para algoritmos ML
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <span class="mr-2">📄</span>
+                    <div>
+                        <strong>Publicaciones:</strong><br>
+                        Espectros de alta calidad para artículos científicos
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado del Sistema RMN -->
+        <div class="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
+            <div class="text-xs text-green-700 dark:text-green-300 text-center">
+                <strong>📊 Estado RMN</strong><br>
+                <span id="rmn-stats">Espectros: 0 | Limpios: 0 | Gráficos: 0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 
         <!-- Estadísticas -->
         <div class="bg-purple-50 dark:bg-purple-900 p-3 rounded-lg">
@@ -392,6 +555,13 @@
                     plantilla, rellenar, documento, formulario, listar plantillas, listar datos, analizar, crear ejemplo, ayuda, subvencion, subvención, document_filler, plantillas, datos, rellenar:
                 </p>
             </div>
+            <!-- Espectros RMN -->
+            <div class="mb-4">
+                <h3 class="font-semibold text-green-700 dark:text-green-300">🧪 Espectros RMN</h3>
+                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto">
+                    rmn, espectro, espectros, resonancia magnética, ruido, limpiar espectro, filtrar, savgol, gaussian, mediana, wiener, línea base, snr, ppm, intensidad, picos, analizar espectro, limpiar auto, comparar espectro, exportar espectro, nmr, spectrum, noise, baseline, peaks, listar espectros
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -424,5 +594,6 @@
 
     <script src="/static/script.js"></script>
     <script type="module" src="/static/js/document.js"></script>
+    <script src="/static/js/rmn.js"></script>
 </body>
 </html>
