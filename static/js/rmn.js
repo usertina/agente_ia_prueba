@@ -207,13 +207,10 @@ async function loadRMNStats() {
         console.error('Error cargando estadísticas RMN:', error);
     }
 }
+console.log("Result recibido:", result);
 
 // -----------------------------
 // Mostrar espectro limpio con descarga
-// -----------------------------
-// -----------------------------
-// Mostrar espectro limpio con descarga (Versión mejorada)
-// -----------------------------
 function showCleanResult(result) {
     const containerId = 'cleaned-spectra';
     let container = document.getElementById(containerId);
@@ -227,15 +224,17 @@ function showCleanResult(result) {
         rmnSection.appendChild(container);
     }
 
+    // Eliminar mensaje de "Todavía no hay espectros limpios"
+    const emptyMsg = container.querySelector('div.text-xs.italic');
+    if (emptyMsg) emptyMsg.remove();
+
     const cleanFileName = result.cleaned_file.split('/').pop();
     const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
-    
-    // Formatear parámetros para mostrar mejor
+
     const paramsStr = result.params ? 
         Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
         'Parámetros automáticos';
 
-    // Crear entrada similar a documentos
     const entry = document.createElement('div');
     entry.className = 'p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500';
     entry.innerHTML = `
@@ -260,7 +259,7 @@ function showCleanResult(result) {
                 </button>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
             <div class="space-y-1">
                 <div class="flex justify-between">
@@ -291,7 +290,7 @@ function showCleanResult(result) {
                 </div>
             </div>
         </div>
-        
+
         <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
             <a href="/download/cleaned/${encodeURIComponent(cleanFileName)}" download
                class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
@@ -304,18 +303,18 @@ function showCleanResult(result) {
                 📊 Descargar Gráfico
             </a>
             ` : ''}
-            
+
             <button onclick="exportSpectrum('${cleanFileName}', 'json')" 
                     class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
                 📁 Exportar JSON
             </button>
-            
+
             <button onclick="showSpectrumDetails('${cleanFileName}')" 
                     class="flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
                 ℹ️ Detalles
             </button>
         </div>
-        
+
         <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
             <span>💡 Haz clic en "Analizar" para ver estadísticas detalladas</span>
             <span>🕒 Procesado en ${result.processing_time || '0'}s</span>
@@ -324,10 +323,7 @@ function showCleanResult(result) {
 
     container.prepend(entry);
 
-    // Actualizar estadísticas RMN
     updateRMNStats();
-    
-    // Mostrar notificación de éxito
     showNotification('success', `Espectro limpiado: ${cleanFileName}`, 'El archivo está listo para descargar');
 }
 

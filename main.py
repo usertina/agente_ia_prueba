@@ -11,7 +11,6 @@ from multi_user_notification_system import multi_user_system
 from datetime import datetime
 import asyncio
 import shutil
-from flask import Flask, send_from_directory, request, render_template
 from tools.rmn_spectrum_cleaner import rmn_cleaner
 
 
@@ -565,32 +564,21 @@ async def download_spectrum(filename: str):
     raise HTTPException(status_code=404, detail=f"No se encontró el espectro {filename}")
 
 
+from fastapi.responses import FileResponse
+
 @app.get("/download/cleaned/{filename}")
-async def download_cleaned_spectrum(filename: str):
-    """Descargar espectro limpio"""
+async def download_cleaned(filename: str):
     file_path = os.path.join(RMN_OUTPUT_DIR, filename)
     if os.path.exists(file_path):
-        return FileResponse(
-            file_path, 
-            filename=filename, 
-            media_type="application/octet-stream",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
+        return FileResponse(file_path, filename=filename, media_type="application/octet-stream")
     raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
-
 
 @app.get("/download/plot/{filename}")
 async def download_plot(filename: str):
-    """Descargar gráfico de análisis"""
     file_path = os.path.join(RMN_PLOTS_DIR, filename)
     if os.path.exists(file_path):
-        return FileResponse(
-            file_path, 
-            filename=filename, 
-            media_type="image/png",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico {filename}")
+        return FileResponse(file_path, filename=filename, media_type="image/png")
+    raise HTTPException(status_code=404, detail=f"No se encontró el plot {filename}")
 
 
 @app.delete("/delete/spectrum/{filename}")
@@ -966,14 +954,6 @@ async def get_notifications_legacy(request: Request):
             "count": 0, 
             "error": str(e)
         })
-@app.route("/download/cleaned/<filename>")
-def download_cleaned(filename):
-    return send_from_directory(rmn_cleaner.output_dir, filename, as_attachment=True)
-
-@app.route("/download/plot/<filename>")
-def download_plot(filename):
-    return send_from_directory(rmn_cleaner.plots_dir, filename, as_attachment=True)
-
 
 # Endpoint para verificar el estado del sistema
 @app.get("/health")

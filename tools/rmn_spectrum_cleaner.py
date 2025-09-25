@@ -42,7 +42,7 @@ class RMNSpectrumCleaner:
             'auto': 'Limpieza Automática (recomendado)'
         }
     
-    def run(self, prompt: str) -> str:
+    def run(self, prompt: str):
         """
         Procesa comandos para limpiar espectros RMN
         
@@ -513,7 +513,7 @@ ppm,intensidad
             print(f"Error aplicando método {method}: {e}")
             return y
     
-    def auto_clean_spectrum(self, filename: str) -> str:
+    def auto_clean_spectrum(self, filename: str):
         """Limpia automáticamente un espectro seleccionando el mejor método"""
         try:
             file_path = os.path.join(self.input_dir, filename)
@@ -535,43 +535,41 @@ ppm,intensidad
             y_clean = self.apply_cleaning_method(y, best_method, params)
             
             # Guardar resultado
-            output_filename = f"{filename.split('.')[0]}_clean_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            output_filename = f"{filename.split('.')[0]}_clean_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
             self.save_cleaned_spectrum(x, y_clean, output_filename, best_method)
             
             # Crear gráfico comparativo
-            plot_path = self.create_comparison_plot(x, y, y_clean, filename, best_method)
+            plot_filename = f"comparison_{filename.split('.')[0]}_{best_method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            plot_path = self.create_comparison_plot(x, y, y_clean, filename, best_method, plot_filename)
             
             # Análisis post-limpieza
             analysis_clean = self.perform_spectrum_analysis(x, y_clean)
             improvement = analysis_clean['snr'] - analysis['snr']
-
             
+            # Calcular tiempo de procesamiento (simulado)
+            processing_time = len(x) * 0.001  # Tiempo estimado
             
-            result = f"✅ **ESPECTRO LIMPIADO AUTOMÁTICAMENTE**\n\n"
-            result += f"📄 **Archivo original:** {filename}\n"
-            result += f"📄 **Archivo limpio:** {output_filename}.csv\n"
-            result += f"🔧 **Método seleccionado:** {self.cleaning_methods[best_method]}\n"
-            result += f"📊 **Parámetros:** {params}\n\n"
-            
-            result += "📈 **Mejora obtenida:**\n"
-            result += f"• SNR original: {analysis['snr']:.1f} dB\n"
-            result += f"• SNR limpio: {analysis_clean['snr']:.1f} dB\n"
-            result += f"• Mejora: +{improvement:.1f} dB\n"
-            
-            if analysis['noise_level'] > 0:
-                noise_reduction = ((analysis['noise_level'] - analysis_clean['noise_level']) / analysis['noise_level'] * 100)
-                result += f"• Reducción ruido: {noise_reduction:.1f}%\n\n"
-            
-            result += f"📁 **Ubicación:** {self.output_dir}/{output_filename}.csv\n"
-            result += f"📊 **Gráfico comparativo:** {plot_path}\n\n"
-            result += f"💡 **Siguiente paso:** `comparar: {filename}`"
-            
-            return result
+            # IMPORTANTE: Devolver diccionario en lugar de string para que JavaScript lo detecte
+            return {
+                'type': 'clean_result',
+                'original_file': filename,
+                'cleaned_file': f"{self.output_dir}/{output_filename}",
+                'plot_file': plot_path if plot_path else None,
+                'method': self.cleaning_methods[best_method],
+                'params': params,
+                'snr_improvement': round(improvement, 1),
+                'snr_original': round(analysis['snr'], 1),
+                'snr_clean': round(analysis_clean['snr'], 1),
+                'processing_time': round(processing_time, 2),
+                'data_points': len(x),
+                'success': True,
+                'message': f"Espectro {filename} limpiado exitosamente con {best_method}"
+            }
             
         except Exception as e:
             return f"❌ Error en limpieza automática: {e}"
     
-    def create_comparison_plot(self, x, y_original, y_clean, filename, method):
+    def create_comparison_plot(self, x, y_original, y_clean, filename, method, plot_filename):
         """Crea gráfico comparativo antes/después"""
         try:
             plt.figure(figsize=(15, 10))
@@ -609,7 +607,6 @@ ppm,intensidad
             plt.tight_layout()
             
             # Guardar
-            plot_filename = f"comparison_{filename.split('.')[0]}_{method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             plot_path = os.path.join(self.plots_dir, plot_filename)
             plt.savefig(plot_path, dpi=300, bbox_inches='tight')
             plt.close()
@@ -618,12 +615,12 @@ ppm,intensidad
             
         except Exception as e:
             print(f"Error creando gráfico comparativo: {e}")
-            return "Error en gráfico comparativo"
+            return None
     
     def save_cleaned_spectrum(self, x, y_clean, filename, method, params=None):
         """Guarda el espectro limpio en formato CSV"""
         try:
-            output_path = os.path.join(self.output_dir, f"{filename}.csv")
+            output_path = os.path.join(self.output_dir, filename)
             
             # Crear DataFrame
             df = pd.DataFrame({
@@ -687,7 +684,7 @@ ppm,intensidad
             y_clean = self.apply_cleaning_method(y, method, params)
             
             # Guardar resultado
-            output_filename = f"{filename.split('.')[0]}_{method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            output_filename = f"{filename.split('.')[0]}_{method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
             self.save_cleaned_spectrum(x, y_clean, output_filename, method, params)
             
             # Análisis post-limpieza
@@ -695,7 +692,7 @@ ppm,intensidad
             improvement = analysis_clean['snr'] - analysis_original['snr']
             
             result = f"✅ **ESPECTRO LIMPIADO CON {method.upper()}**\n\n"
-            result += f"📄 **Archivo:** {output_filename}.csv\n"
+            result += f"📄 **Archivo:** {output_filename}\n"
             result += f"🔧 **Método:** {self.cleaning_methods[method]}\n"
             result += f"📊 **Parámetros:** {params if params else 'Por defecto'}\n\n"
             
@@ -709,7 +706,7 @@ ppm,intensidad
             if improvement < 2:
                 result += "⚠️ **Advertencia:** Mejora limitada. Prueba con 'limpiar auto'\n"
             
-            result += f"📁 **Ubicación:** {self.output_dir}/{output_filename}.csv"
+            result += f"📁 **Ubicación:** {self.output_dir}/{output_filename}"
             
             return result
             
@@ -904,6 +901,6 @@ ppm,intensidad
 rmn_cleaner = RMNSpectrumCleaner()
 
 
-def run(prompt: str) -> str:
+def run(prompt: str):
     """Función principal de la herramienta"""
     return rmn_cleaner.run(prompt)
