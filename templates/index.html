@@ -48,6 +48,57 @@
             <button type="submit" class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-r-full focus:outline-none focus:ring-2 ring-blue-500 transition-colors">Enviar</button>
         </form>
 
+        <!-- Sistema de Notificaciones -->
+        <div id="notification-system" class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-xl shadow-lg border border-blue-200 dark:border-blue-700">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl">🔔</span>
+                    <div>
+                        <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Sistema de Notificaciones</h3>
+                        <p class="text-sm text-blue-600 dark:text-blue-400" id="notification-status">Estado: ⏳ Iniciando...</p>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="configureNotifications()" class="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors">
+                        ⚙️ Configurar
+                    </button>
+                    <button onclick="testNotifications()" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
+                        🧪 Test
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">📧 Emails</h4>
+                    <p class="text-gray-600 dark:text-gray-400">Monitoreo de correos importantes</p>
+                    <button onclick="executeCommand('activar emails')" class="mt-2 text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-blue-800 dark:text-blue-200 rounded transition-colors">
+                        Activar
+                    </button>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">🔬 Patentes</h4>
+                    <p class="text-gray-600 dark:text-gray-400">Nuevas patentes por keywords</p>
+                    <button onclick="executeCommand('activar patentes')" class="mt-2 text-xs px-2 py-1 bg-green-100 hover:bg-green-200 dark:bg-green-700 dark:hover:bg-green-600 text-green-800 dark:text-green-200 rounded transition-colors">
+                        Activar
+                    </button>
+                </div>
+                
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">📚 Papers</h4>
+                    <p class="text-gray-600 dark:text-gray-400">Artículos científicos de arXiv</p>
+                    <button onclick="executeCommand('activar papers')" class="mt-2 text-xs px-2 py-1 bg-purple-100 hover:bg-purple-200 dark:bg-purple-700 dark:hover:bg-purple-600 text-purple-800 dark:text-purple-200 rounded transition-colors">
+                        Activar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center">
+                💡 Las notificaciones aparecerán en el historial y como alertas del navegador
+            </div>
+        </div>
+
         <!-- Contenedor RMN + Documentos -->
         <div id="rmn-document-container" class="flex flex-col mt-6 space-y-6">
 
@@ -204,6 +255,17 @@
                     <li><strong>Métodos:</strong> <code>métodos</code></li>
                 </ul>
             </div>
+
+            <div class="p-4 bg-rose-100 dark:bg-rose-800 rounded-xl">
+                <h3 class="font-bold text-rose-800 dark:text-rose-100 text-lg">🔔 Notificaciones</h3>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    <li><strong>Estado:</strong> <code>status</code></li>
+                    <li><strong>Activar emails:</strong> <code>activar emails</code></li>
+                    <li><strong>Activar patentes:</strong> <code>activar patentes</code></li>
+                    <li><strong>Configurar keywords:</strong> <code>keywords patentes: AI, blockchain</code></li>
+                    <li><strong>Test:</strong> <code>test</code></li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -218,6 +280,28 @@
     guideKeywordsModal.addEventListener("click", (e) => {
         if(e.target === guideKeywordsModal) guideKeywordsModal.classList.add("hidden");
     });
+
+    // Funciones para el sistema de notificaciones
+    window.configureNotifications = function() {
+        const input = document.getElementById('user_input');
+        const form = document.getElementById('commandForm');
+        input.value = 'status';
+        form.dispatchEvent(new Event('submit'));
+    };
+
+    window.testNotifications = function() {
+        const input = document.getElementById('user_input');
+        const form = document.getElementById('commandForm');
+        input.value = 'test';
+        form.dispatchEvent(new Event('submit'));
+    };
+
+    window.executeCommand = function(command) {
+        const input = document.getElementById('user_input');
+        const form = document.getElementById('commandForm');
+        input.value = command;
+        form.dispatchEvent(new Event('submit'));
+    };
 </script>
 
 <script src="/static/js/rmn.js"></script>
