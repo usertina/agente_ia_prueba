@@ -21,6 +21,7 @@ google-generativeai>=0.8
 googleapis-common-protos>=1.70
 grpcio>=1.71,<1.76
 grpcio-status>=1.71,<1.76
+protobuf>=4.21,<5.0
 h11>=0.16
 httplib2>=0.20
 httptools>=0.6
@@ -38,7 +39,6 @@ packaging>=25.0
 pandas>=2.3
 pillow>=11.0
 proto-plus>=1.26
-protobuf==3.20.3
 pyasn1>=0.6
 pyasn1_modules>=0.4
 pydantic>=2.11,<2.12
