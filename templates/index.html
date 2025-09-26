@@ -103,7 +103,71 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
                 </div>
             </div>
-            
+
+        <!-- Añadir después de la sección de notificaciones -->
+<div class="mb-4">
+    <button id="ayudas-toggle" onclick="toggleAyudasSection()" 
+             class="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium">
+        💶 Ayudas y Subvenciones ▶
+    </button>
+</div>
+
+<div id="ayudas-section" class="hidden space-y-3 mb-4">
+    <div class="p-3 bg-green-50 dark:bg-green-900 rounded-lg">
+        <h4 class="font-medium text-green-800 dark:text-green-200 mb-2">📊 Monitor de Ayudas</h4>
+        <p class="text-xs text-green-600 dark:text-green-300" id="ayudas-stats">Sin datos</p>
+    </div>
+
+    <div class="space-y-2">
+        <button onclick="searchAyudas()" 
+                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
+            🔍 Buscar Ayudas Actuales
+        </button>
+        
+        <button onclick="configureAyudasRegion()" 
+                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
+            📍 Configurar Región
+        </button>
+        
+        <button onclick="activateAyudasNotifications()" 
+                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
+            🔔 Activar Notificaciones
+        </button>
+        
+        <button onclick="testAyudasSystem()" 
+                 class="w-full p-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors">
+            🧪 Test del Sistema
+        </button>
+    </div>
+
+    <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+        <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">🏷️ Filtros rápidos:</h5>
+        <div class="grid grid-cols-2 gap-1">
+            <button onclick="filterAyudas('innovacion')" 
+                     class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors">
+                Innovación
+            </button>
+            <button onclick="filterAyudas('empleo')" 
+                     class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors">
+                Empleo
+            </button>
+            <button onclick="filterAyudas('sostenibilidad')" 
+                     class="px-2 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600 transition-colors">
+                Sostenible
+            </button>
+            <button onclick="filterAyudas('digital')" 
+                     class="px-2 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600 transition-colors">
+                Digital
+            </button>
+        </div>
+    </div>
+
+    <div id="ayudas-list" class="max-h-40 overflow-y-auto space-y-2">
+        <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
+            Usa "Buscar Ayudas Actuales" para empezar
+        </div>
+    </div>
+</div>    
             <div id="notes-section">
                 <h4 class="font-medium text-gray-600 dark:text-gray-400 mb-2">📝 Notas</h4>
                 <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
@@ -616,6 +680,116 @@ function showCleanResult(result) {
     loadRMNStats();
 }
 
+// Funciones JavaScript para ayudas
+function toggleAyudasSection() {
+    const section = document.getElementById('ayudas-section');
+    const toggle = document.getElementById('ayudas-toggle');
+    
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        toggle.innerHTML = '💶 Ayudas y Subvenciones ▼';
+        loadAyudasStats();
+    } else {
+        section.classList.add('hidden');
+        toggle.innerHTML = '💶 Ayudas y Subvenciones ▶';
+    }
+}
+
+function searchAyudas() {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = 'ayudas buscar';
+    form.dispatchEvent(new Event('submit'));
+}
+
+function filterAyudas(tipo) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `ayudas filtrar: ${tipo}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+function configureAyudasRegion() {
+    const regions = ['euskadi', 'gipuzkoa', 'bizkaia', 'araba', 'nacional', 'todas'];
+    const region = prompt(`Selecciona tu región:\n${regions.join(', ')}`);
+    
+    if (region && regions.includes(region.toLowerCase())) {
+        const input = document.getElementById('user_input');
+        const form = document.getElementById('commandForm');
+        input.value = `ayudas region: ${region}`;
+        form.dispatchEvent(new Event('submit'));
+    }
+}
+
+function activateAyudasNotifications() {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = 'ayudas activar';
+    form.dispatchEvent(new Event('submit'));
+}
+
+function testAyudasSystem() {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = 'ayudas test';
+    form.dispatchEvent(new Event('submit'));
+}
+
+async function loadAyudasStats() {
+    // Esta función podría hacer una llamada API para obtener estadísticas
+    const statsEl = document.getElementById('ayudas-stats');
+    statsEl.textContent = 'Sistema de monitoreo activo - 5 fuentes configuradas';
+}
+
+// Escuchar notificaciones de ayudas
+window.addEventListener('ayudasNotification', function(event) {
+    const ayuda = event.detail;
+    showAyudaNotification(ayuda);
+});
+
+function showAyudaNotification(ayuda) {
+    // Mostrar notificación del navegador
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification(ayuda.title, {
+            body: ayuda.message,
+            icon: '💶',
+            tag: `ayuda_${ayuda.data.id}`,
+            data: ayuda.data
+        });
+        
+        notification.onclick = function() {
+            window.open(ayuda.data.url, '_blank');
+            notification.close();
+        };
+    }
+    
+    // Actualizar lista de ayudas en el panel
+    updateAyudasList(ayuda);
+}
+
+function updateAyudasList(ayuda) {
+    const listEl = document.getElementById('ayudas-list');
+    if (listEl) {
+        const ayudaEl = document.createElement('div');
+        ayudaEl.className = 'p-2 bg-green-50 dark:bg-green-800 rounded text-xs cursor-pointer hover:bg-green-100 dark:hover:bg-green-700';
+        ayudaEl.innerHTML = `
+            <div class="font-semibold text-green-800 dark:text-green-200">${ayuda.title}</div>
+            <div class="text-green-600 dark:text-green-300">${ayuda.message}</div>
+            <div class="text-xs text-green-500 dark:text-green-400 mt-1">
+                ${ayuda.data.fecha_limite ? `Límite: ${ayuda.data.fecha_limite}` : 'Sin fecha límite'}
+            </div>
+        `;
+        ayudaEl.onclick = () => window.open(ayuda.data.url, '_blank');
+        
+        // Insertar al principio de la lista
+        listEl.insertBefore(ayudaEl, listEl.firstChild);
+        
+        // Limitar a 10 elementos
+        while (listEl.children.length > 10) {
+            listEl.removeChild(listEl.lastChild);
+        }
+    }
+}
 // =============================================================================
 // FUNCIONES DE CONTROL DE DOCUMENTOS
 // =============================================================================

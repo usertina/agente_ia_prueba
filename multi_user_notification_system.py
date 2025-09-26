@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 from sources.papers import check_papers
 from sources.patents import check_patents
-from sources.ayudas import check_ayudas
+from sources.ayudas_real import check_ayudas
 from sources.emails import check_emails
 
 class MultiUserNotificationSystem:
@@ -410,11 +410,12 @@ class MultiUserNotificationSystem:
             patents = check_patents(config.get("patent_keywords", []), since_date)
             for n in patents:
                 self.save_notification(user_id, n)
-
         if config.get("ayudas_notifications"):
-            ayudas = check_ayudas(config.get("region", "España"), since_date)
-            for n in ayudas:
-                self.save_notification(user_id, n)
+                # CAMBIO: Importar el scraper real en lugar del simulado
+                from sources.ayudas_real import check_ayudas
+                ayudas = check_ayudas(config.get("region", "Euskadi"), since_date)
+                for n in ayudas:
+                    self.save_notification(user_id, n)
 
         if config.get("email_notifications"):
             emails = check_emails(user_id, since_date)

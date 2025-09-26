@@ -21,7 +21,8 @@ TOOLS = {
     "code_gen": "tools.code_gen",
     "notifications": "tools.notifications",
     "document_filler": "tools.document_filler",
-    "rmn_spectrum_cleaner": "tools.rmn_spectrum_cleaner"  # Nueva herramienta
+    "rmn_spectrum_cleaner": "tools.rmn_spectrum_cleaner",
+    "ayudas_manager": "tools.ayudas_manager"  # Nueva herramienta
 }
 
 def ask_gemini_for_tool(prompt: str) -> str:
@@ -106,6 +107,18 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "_array_", "_cut", "_ref", "datos analíticos", "datos analiticos",
         "procesar datos", "limpiar datos", "filtrar datos"
     ]
+
+    # Palabras clave de ayudas/subvenciones
+    ayudas_keywords = [
+        "ayudas", "ayuda", "subvención", "subvenciones", "subvencion",
+        "beca", "becas", "financiación", "financiacion", "fondos",
+        "convocatoria", "convocatorias", "euskadi", "gipuzkoa",
+        "spri", "europea", "next generation", "bdns"
+    ]
+    
+    if any(keyword in prompt_lower for keyword in ayudas_keywords):
+        return "ayudas_manager"
+    
 
     # Revisar espectros RMN PRIMERO (nueva herramienta)
     if any(keyword in prompt_lower for keyword in rmn_keywords):

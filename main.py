@@ -1,5 +1,7 @@
 import math
 import mimetypes
+from sched import scheduler
+import time
 import urllib
 from fastapi import FastAPI, Form, Request, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -16,7 +18,11 @@ import asyncio
 import shutil
 # Importamos la herramienta rmn_cleaner (asumiendo que está en tools.rmn_spectrum_cleaner)
 from tools.rmn_spectrum_cleaner import rmn_cleaner 
-
+import threading
+from scheduler_ayudas import check_new_ayudas
+import schedule
+import time
+import threading
 
 load_dotenv()
 
@@ -403,6 +409,11 @@ async def startup_event():
     try:
         # Inicializar la base de datos
         multi_user_system.init_database()
+
+         # Iniciar scheduler de ayudas en thread separado
+        ayudas_thread = threading.Thread(target=start_ayudas_scheduler, daemon=True)
+        ayudas_thread.start()
+        print("💶 Scheduler de ayudas iniciado")
         
         # Iniciar monitoreo en background
         success = multi_user_system.start_background_monitoring()
@@ -413,6 +424,15 @@ async def startup_event():
     except Exception as e:
         print(f"❌ Error iniciando sistema de notificaciones: {e}")
 
+def start_ayudas_scheduler():
+    """Ejecuta el scheduler de ayudas en background"""
+   
+    # Programar verificaciones
+    schedule.every(6).hours.do(check_new_ayudas)
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
 
 @app.on_event("shutdown")
 async def shutdown_event():
