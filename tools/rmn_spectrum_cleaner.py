@@ -11,6 +11,7 @@ from datetime import datetime
 import io
 import base64
 from pathlib import Path
+import math
 
 class RMNSpectrumCleaner:
     """
@@ -189,6 +190,7 @@ class RMNSpectrumCleaner:
    • **Ruido complejo** → auto (recomendado)
 
         """    
+    
     def list_spectra(self) -> str:
         """Lista los espectros disponibles"""
         try:
@@ -248,7 +250,6 @@ ppm,intensidad
         Convierte un valor en float. Si es un rango tipo '-85.1326 - -85.1226',
         devuelve el promedio de ambos.
         """
-        import re
         if isinstance(value, (int, float)):
             return float(value)
         
@@ -354,8 +355,83 @@ ppm,intensidad
             return {'snr': 0, 'noise_level': 1, 'signal_level': 1, 
                    'baseline_drift': 0, 'peak_count': 0, 
                    'mean_intensity': 0, 'std_intensity': 1}
+
+    def create_analysis_plot(self, x, y, filename, analysis):
+        """Crea gráfico de análisis del espectro"""
+        try:
+            # Crear figura con tamaño adecuado
+            plt.figure(figsize=(12, 8))
+            
+            # Gráfico principal - Espectro completo
+            plt.subplot(2, 1, 1)
+            plt.plot(x, y, 'b-', alpha=0.7, linewidth=1, label='Espectro original')
+            plt.title(f'Análisis de Espectro: {filename}', fontsize=14, fontweight='bold')
+            plt.xlabel('ppm')
+            plt.ylabel('Intensidad')
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+            
+            # Detectar y marcar picos en el gráfico
+            try:
+                threshold = analysis['mean_intensity'] + 2*analysis['std_intensity']
+                peaks, _ = signal.find_peaks(y, height=threshold, distance=len(y)//50)
+                if len(peaks) > 0:
+                    plt.plot(x[peaks], y[peaks], 'ro', markersize=4, alpha=0.7, 
+                            label=f'Picos detectados ({len(peaks)})')
+                    plt.legend()
+            except Exception as peak_error:
+                print(f"Warning: No se pudieron detectar picos: {peak_error}")
+            
+            # Estadísticas en el gráfico
+            stats_text = (f'SNR: {analysis["snr"]:.1f} dB\n'
+                         f'Picos: {analysis["peak_count"]}\n'
+                         f'Ruido: {analysis["noise_level"]:.3f}\n'
+                         f'Deriva base: {analysis["baseline_drift"]:.3f}')
+            
+            plt.text(0.02, 0.98, stats_text, 
+                    transform=plt.gca().transAxes, verticalalignment='top',
+                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
+                    fontsize=10)
+            
+            # Histograma de intensidades
+            plt.subplot(2, 1, 2)
+            plt.hist(y, bins=50, alpha=0.7, color='skyblue', edgecolor='black', linewidth=0.5)
+            plt.axvline(analysis['mean_intensity'], color='red', linestyle='--', linewidth=2,
+                       label=f'Media: {analysis["mean_intensity"]:.1f}')
+            
+            # Línea de umbral para detección de picos
+            peak_threshold = analysis['mean_intensity'] + 2*analysis['std_intensity']
+            plt.axvline(peak_threshold, color='orange', linestyle='--', linewidth=2,
+                       label=f'Umbral picos: {peak_threshold:.1f}')
+            
+            plt.title('Distribución de Intensidades')
+            plt.xlabel('Intensidad')
+            plt.ylabel('Frecuencia')
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            
+            # Ajustar layout
+            plt.tight_layout()
+            
+            # Generar nombre de archivo único
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            plot_filename = f"analysis_{filename.split('.')[0]}_{timestamp}.png"
+            plot_path = os.path.join(self.plots_dir, plot_filename)
+            
+            # Guardar el gráfico
+            plt.savefig(plot_path, dpi=300, bbox_inches='tight', 
+                       facecolor='white', edgecolor='none')
+            plt.close()  # Importante: cerrar la figura para liberar memoria
+            
+            print(f"✅ Gráfico de análisis guardado: {plot_path}")
+            return plot_path
+            
+        except Exception as e:
+            print(f"❌ Error creando gráfico de análisis: {e}")
+            plt.close()  # Cerrar figura incluso si hay error
+            return None
     
-    def analyze_spectrum(self, filename: str) -> str:
+    def analyze_spectrum(self, filename: str):
         """Analiza un espectro para detectar ruido y características"""
         try:
             file_path = os.path.join(self.input_dir, filename)
@@ -372,88 +448,91 @@ ppm,intensidad
             
             # Generar gráfico de análisis
             plot_path = self.create_analysis_plot(x, y, filename, analysis)
+            plot_filename = plot_path.split('/')[-1] if plot_path else None
             
-            result = f"🔍 **ANÁLISIS DE ESPECTRO: {filename}**\n\n"
-            
-            result += "📊 **Estadísticas básicas:**\n"
-            result += f"• Puntos de datos: {len(y):,}\n"
-            result += f"• Rango frecuencia: {x.min():.2f} - {x.max():.2f} ppm\n"
-            result += f"• Intensidad máxima: {y.max():.1f}\n"
-            result += f"• Intensidad mínima: {y.min():.1f}\n\n"
-            
-            result += "🔬 **Análisis de calidad:**\n"
-            result += f"• Relación señal/ruido: {analysis['snr']:.1f} dB\n"
-            result += f"• Nivel de ruido: {analysis['noise_level']:.2f}\n"
-            result += f"• Deriva línea base: {analysis['baseline_drift']:.2f}\n"
-            result += f"• Picos detectados: {analysis['peak_count']}\n\n"
-            
-            # Recomendaciones
-            result += "💡 **Recomendaciones:**\n"
+            # Generar recomendaciones
+            recommendations = []
             if analysis['snr'] < 20:
-                result += "• ⚠️ SNR baja - Se recomienda limpieza agresiva\n"
-                result += f"• 🎯 Método sugerido: `limpiar: {filename} con wiener`\n"
+                recommendations.append("⚠️ SNR baja - Se recomienda limpieza agresiva")
+                recommendations.append(f"🎯 Método sugerido: limpiar: {filename} con wiener")
             elif analysis['snr'] < 30:
-                result += "• 📈 SNR moderada - Limpieza suave recomendada\n"
-                result += f"• 🎯 Método sugerido: `limpiar: {filename} con savgol`\n"
+                recommendations.append("📈 SNR moderada - Limpieza suave recomendada")
+                recommendations.append(f"🎯 Método sugerido: limpiar: {filename} con savgol")
             else:
-                result += "• ✅ SNR buena - Limpieza mínima necesaria\n"
-                result += f"• 🎯 Método sugerido: `limpiar: {filename} con gaussian`\n"
+                recommendations.append("✅ SNR buena - Limpieza mínima necesaria")
+                recommendations.append(f"🎯 Método sugerido: limpiar: {filename} con gaussian")
             
             if analysis['baseline_drift'] > 0.1:
-                result += "• 📏 Deriva de línea base detectada - Usar corrección polinómica\n"
+                recommendations.append("📏 Deriva de línea base detectada - Usar corrección polinómica")
+            
+            recommendations.append(f"🔧 Limpieza automática recomendada: limpiar auto: {filename}")
+            
+            # CAMBIO PRINCIPAL: Devolver diccionario estructurado
+            if plot_filename:
+                return {
+                    'type': 'analysis_result',
+                    'filename': filename,
+                    'analysis': {
+                        'snr': float(analysis['snr']) if not math.isnan(analysis['snr']) else 0,
+                        'noise_level': float(analysis['noise_level']) if not math.isnan(analysis['noise_level']) else 0,
+                        'baseline_drift': float(analysis['baseline_drift']) if not math.isnan(analysis['baseline_drift']) else 0,
+                        'peak_count': int(analysis['peak_count']),
+                        'mean_intensity': float(analysis['mean_intensity']) if not math.isnan(analysis['mean_intensity']) else 0,
+                        'std_intensity': float(analysis['std_intensity']) if not math.isnan(analysis['std_intensity']) else 0
+                    },
+                    'plot_file': plot_filename,
+                    'plot_url': f"/download/analysis/{plot_filename}",
+                    'statistics': {
+                        'data_points': len(y),
+                        'frequency_range': f"{x.min():.2f} - {x.max():.2f} ppm",
+                        'intensity_max': float(y.max()),
+                        'intensity_min': float(y.min())
+                    },
+                    'recommendations': recommendations,
+                    'success': True
+                }
+            else:
+                # Fallback: si hay error con el gráfico, devolver texto tradicional
+                return self._format_analysis_text(filename, analysis, x, y)
                 
-            result += f"\n🔧 **Limpieza automática:** `limpiar auto: {filename}`\n"
-            result += f"📊 **Gráfico guardado:** {plot_path}"
-            
-            return result
-            
         except Exception as e:
             return f"❌ Error analizando espectro: {e}"
-    
-    def create_analysis_plot(self, x, y, filename, analysis):
-        """Crea gráfico de análisis del espectro"""
-        try:
-            plt.figure(figsize=(12, 8))
+
+    def _format_analysis_text(self, filename, analysis, x, y):
+        """Método auxiliar para formatear análisis como texto (fallback)"""
+        result = f"🔍 **ANÁLISIS DE ESPECTRO: {filename}**\n\n"
+        
+        result += "📊 **Estadísticas básicas:**\n"
+        result += f"• Puntos de datos: {len(y):,}\n"
+        result += f"• Rango frecuencia: {x.min():.2f} - {x.max():.2f} ppm\n"
+        result += f"• Intensidad máxima: {y.max():.1f}\n"
+        result += f"• Intensidad mínima: {y.min():.1f}\n\n"
+        
+        result += "🔬 **Análisis de calidad:**\n"
+        result += f"• Relación señal/ruido: {analysis['snr']:.1f} dB\n"
+        result += f"• Nivel de ruido: {analysis['noise_level']:.2f}\n"
+        result += f"• Deriva línea base: {analysis['baseline_drift']:.2f}\n"
+        result += f"• Picos detectados: {analysis['peak_count']}\n\n"
+        
+        # Recomendaciones
+        result += "💡 **Recomendaciones:**\n"
+        if analysis['snr'] < 20:
+            result += "• ⚠️ SNR baja - Se recomienda limpieza agresiva\n"
+            result += f"• 🎯 Método sugerido: `limpiar: {filename} con wiener`\n"
+        elif analysis['snr'] < 30:
+            result += "• 📈 SNR moderada - Limpieza suave recomendada\n"
+            result += f"• 🎯 Método sugerido: `limpiar: {filename} con savgol`\n"
+        else:
+            result += "• ✅ SNR buena - Limpieza mínima necesaria\n"
+            result += f"• 🎯 Método sugerido: `limpiar: {filename} con gaussian`\n"
+        
+        if analysis['baseline_drift'] > 0.1:
+            result += "• 📏 Deriva de línea base detectada - Usar corrección polinómica\n"
             
-            # Gráfico principal
-            plt.subplot(2, 1, 1)
-            plt.plot(x, y, 'b-', alpha=0.7, linewidth=1)
-            plt.title(f'Análisis de Espectro: {filename}')
-            plt.xlabel('ppm')
-            plt.ylabel('Intensidad')
-            plt.grid(True, alpha=0.3)
-            
-            # Estadísticas en el gráfico
-            plt.text(0.02, 0.98, f'SNR: {analysis["snr"]:.1f} dB\nPicos: {analysis["peak_count"]}', 
-                    transform=plt.gca().transAxes, verticalalignment='top',
-                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-            
-            # Histograma de intensidades
-            plt.subplot(2, 1, 2)
-            plt.hist(y, bins=50, alpha=0.7, color='skyblue')
-            plt.axvline(analysis['mean_intensity'], color='red', linestyle='--', 
-                       label=f'Media: {analysis["mean_intensity"]:.1f}')
-            plt.axvline(analysis['mean_intensity'] + 2*analysis['std_intensity'], 
-                       color='orange', linestyle='--', label='Umbral picos')
-            plt.title('Distribución de Intensidades')
-            plt.xlabel('Intensidad')
-            plt.ylabel('Frecuencia')
-            plt.legend()
-            plt.grid(True, alpha=0.3)
-            
-            plt.tight_layout()
-            
-            # Guardar
-            plot_filename = f"analysis_{filename.split('.')[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            plot_path = os.path.join(self.plots_dir, plot_filename)
-            plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-            plt.close()
-            
-            return f"{self.plots_dir}/{plot_filename}"
-            
-        except Exception as e:
-            print(f"Error creando gráfico: {e}")
-            return "Error en gráfico"
+        result += f"\n🔧 **Limpieza automática:** `limpiar auto: {filename}`\n"
+        result += f"⚠️ **Nota:** Gráfico de análisis no disponible por error técnico"
+        
+        return result
     
     def select_best_method(self, analysis):
         """Selecciona automáticamente el mejor método de limpieza"""

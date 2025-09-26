@@ -561,6 +561,14 @@ async def ask(request: Request, user_input: str = Form(...)):
                     "input": user_input,
                     "tool": tool
                 })
+             #Si el resultado es un diccionario de análisis exitoso
+            elif isinstance(result, dict) and result.get('type') == 'analysis_result':
+                return JSONResponse({
+                    "result_type": "spectrum_analysis",
+                    "result_data": clean_nan_for_json(result),
+                    "input": user_input,
+                    "tool": tool
+                })
 
         # Usar Gemini para elegir la herramienta
         else:
@@ -612,6 +620,15 @@ async def ask(request: Request, user_input: str = Form(...)):
                 "input": user_input,
                 "tool": tool
             })
+        elif isinstance(result, dict) and "analysis" in result:
+            # Si contiene 'analysis', es un resultado de análisis RMN
+            return JSONResponse({
+                "result_type": "spectrum_analysis",
+                "result_data": clean_nan_for_json(result),
+                "input": user_input,
+                "tool": tool
+            })
+        
         else:
             return JSONResponse({
                 "result_type": "text",
@@ -973,7 +990,7 @@ async def upload_spectrum(file: UploadFile = File(...)):
 
 @app.get("/files/spectra")
 async def get_spectra_files():
-    """Obtener lista de archivos de espectros"""
+    """Obtener lista de archivos de espectros (MODIFICADO para incluir plots de análisis)"""
     try:
         spectra = []
         cleaned = []
@@ -988,19 +1005,36 @@ async def get_spectra_files():
                         'name': file,
                         'size': os.path.getsize(file_path),
                         'modified': os.path.getmtime(file_path),
+                        'type': 'original'
+                    })
+
+        # Listar espectros limpios
+        if os.path.exists(RMN_OUTPUT_DIR):
+            for file in os.listdir(RMN_OUTPUT_DIR):
+                if file.endswith('.csv'):
+                    file_path = os.path.join(RMN_OUTPUT_DIR, file)
+                    cleaned.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
                         'type': 'cleaned'
                     })
 
-        # Listar gráficos generados
+        # Listar TODOS los gráficos generados (análisis + comparación)
         if os.path.exists(RMN_PLOTS_DIR):
             for file in os.listdir(RMN_PLOTS_DIR):
                 if file.endswith('.png'):
                     file_path = os.path.join(RMN_PLOTS_DIR, file)
+                    plot_type = 'comparison'
+                    if file.startswith('analysis_'):
+                        plot_type = 'analysis'
+                    
                     plots.append({
                         'name': file,
                         'size': os.path.getsize(file_path),
                         'modified': os.path.getmtime(file_path),
-                        'type': 'plot'
+                        'type': 'plot',
+                        'plot_type': plot_type
                     })
 
         return JSONResponse({
@@ -1018,7 +1052,6 @@ async def get_spectra_files():
             "total": 0,
             "error": str(e)
         })
-
 
 @app.get("/download/spectrum/{filename}")
 async def download_spectrum(filename: str):
@@ -1100,7 +1133,6 @@ async def list_cleaned_spectra():
             "cleaned": [],
             "count": 0
         }, status_code=500)
-# AGREGAR ESTOS ENDPOINTS AL ARCHIVO main.py después de los endpoints existentes
 
 @app.get("/download/cleaned/{filename}")
 async def download_cleaned_spectrum(filename: str):
@@ -1129,6 +1161,47 @@ async def download_plot(filename: str):
         )
     raise HTTPException(status_code=404, detail=f"No se encontró el gráfico {filename}")
 
+@app.get("/download/analysis/{filename}")
+async def download_analysis_plot(filename: str):
+    """Descargar gráfico de análisis específico"""
+    file_path = os.path.join(RMN_PLOTS_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico de análisis {filename}")
+
+@app.get("/list/analysis")
+async def list_analysis_plots():
+    """Listar solo gráficos de análisis"""
+    try:
+        analysis_plots = []
+        if os.path.exists(RMN_PLOTS_DIR):
+            for file in os.listdir(RMN_PLOTS_DIR):
+                if file.startswith('analysis_') and file.endswith('.png'):
+                    file_path = os.path.join(RMN_PLOTS_DIR, file)
+                    analysis_plots.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'analysis_plot'
+                    })
+        
+        return JSONResponse({
+            "success": True,
+            "analysis_plots": analysis_plots,
+            "count": len(analysis_plots)
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "analysis_plots": [],
+            "count": 0
+        }, status_code=500)
 
 @app.delete("/delete/cleaned/{filename}")
 async def delete_cleaned_spectrum(filename: str):

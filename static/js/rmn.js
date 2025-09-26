@@ -440,7 +440,7 @@ function handleSpectrumCleaningResult(result, input, tool) {
     return false;
 }
 
-// Función para mostrar resultado completo de limpieza
+/* // Función para mostrar resultado completo de limpieza
 function showCleanSpectrumResult(result) {
     console.log("Mostrando resultado completo:", result);
     
@@ -538,7 +538,7 @@ function showCleanSpectrumResult(result) {
     localStorage.setItem('lastSpectrum', result.original_file);
     localStorage.setItem('lastCleanedSpectrum', cleanFileName);
 }
-
+ */
 // Función para resultado simple (cuando solo tenemos texto)
 function showSimpleCleanResult(fileName, resultText) {
     const responseDiv = document.getElementById('response');
@@ -713,6 +713,215 @@ function integrateSpectrumHandling() {
         originalHandleResponse(data);
     };
 }
+
+// AGREGAR estas funciones al archivo static/js/rmn.js o al script principal
+
+// Función para manejar resultados de análisis
+function handleAnalysisResult(result, input, tool) {
+    console.log("Procesando resultado de análisis:", result);
+    
+    // Verificar si es un resultado de análisis
+    if (typeof result === 'object' && result.type === 'analysis_result') {
+        showAnalysisResult(result);
+        return true;
+    }
+    
+    return false;
+}
+
+// Función para mostrar resultado de análisis
+function showAnalysisResult(result) {
+    console.log("Mostrando resultado de análisis:", result);
+    
+    const responseDiv = document.getElementById('response') || document.getElementById('history');
+    if (!responseDiv) return;
+    
+    const analysis = result.analysis;
+    const stats = result.statistics;
+    
+    const resultHTML = `
+        <div class="analysis-result bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-lg shadow-md border-l-4 border-blue-500 p-4 mb-4">
+            <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="text-2xl">🔍</div>
+                    <div>
+                        <div class="text-blue-800 dark:text-blue-200 font-bold text-lg">ANÁLISIS COMPLETADO</div>
+                        <div class="text-xs text-blue-600 dark:text-blue-400">
+                            ${new Date().toLocaleString('es-ES')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
+                <div class="space-y-2">
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-200">📊 Estadísticas básicas</h4>
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Archivo:</span>
+                            <span class="font-mono text-gray-800 dark:text-gray-200">${result.filename}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Puntos de datos:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${stats.data_points.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Rango frecuencia:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${stats.frequency_range} ppm</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Intensidad máxima:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${stats.intensity_max.toFixed(1)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <h4 class="font-semibold text-purple-800 dark:text-purple-200">🔬 Análisis de calidad</h4>
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">SNR:</span>
+                            <span class="font-semibold ${analysis.snr > 30 ? 'text-green-600' : analysis.snr > 20 ? 'text-yellow-600' : 'text-red-600'}">${analysis.snr.toFixed(1)} dB</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Nivel de ruido:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${analysis.noise_level.toFixed(3)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Deriva línea base:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${analysis.baseline_drift.toFixed(3)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 dark:text-gray-400">Picos detectados:</span>
+                            <span class="text-gray-700 dark:text-gray-300">${analysis.peak_count}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-3 mb-4">
+                <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">💡 Recomendaciones</h4>
+                <div class="text-sm text-yellow-700 dark:text-yellow-300">
+                    ${Array.isArray(result.recommendations) ? 
+                        result.recommendations.map(rec => `<div>• ${rec}</div>`).join('') :
+                        result.recommendations || 'Usa limpieza automática para mejores resultados'
+                    }
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-3 border-t border-blue-200 dark:border-blue-700">
+                ${result.plot_file ? `
+                <a href="${result.plot_url}" download="${result.plot_file}"
+                   class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                    📊 Descargar Gráfico de Análisis
+                </a>
+                ` : ''}
+                
+                <button onclick="startCleaningProcess('${result.filename}')" 
+                        class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
+                    🧪 Limpiar Espectro Ahora
+                </button>
+
+                <button onclick="listAllPlots()" 
+                        class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
+                    📋 Ver Todos los Gráficos
+                </button>
+            </div>
+
+            <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                💡 El gráfico de análisis muestra la calidad del espectro y los picos detectados
+            </div>
+        </div>
+    `;
+    
+    // Insertar al inicio del response div
+    responseDiv.insertAdjacentHTML('afterbegin', resultHTML);
+    
+    // Actualizar estadísticas
+    updateRMNStats();
+    
+    // Mostrar notificación
+    showNotification('success', 'Análisis Completado', `Gráfico de ${result.filename} listo para descargar`);
+    
+    // Guardar último espectro analizado
+    localStorage.setItem('lastAnalyzedSpectrum', result.filename);
+}
+
+// Función para iniciar proceso de limpieza desde el análisis
+function startCleaningProcess(filename) {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `limpiar auto: ${filename}`;
+    form.dispatchEvent(new Event('submit'));
+}
+
+// Función para listar todos los gráficos
+async function listAllPlots() {
+    try {
+        const response = await fetch('/list/analysis');
+        const data = await response.json();
+        
+        if (data.success && data.analysis_plots.length > 0) {
+            let listHTML = '<div class="analysis-plots-list mt-4"><h4 class="font-bold mb-2">📊 Gráficos de Análisis Disponibles:</h4>';
+            
+            data.analysis_plots.forEach((plot, index) => {
+                listHTML += `
+                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border text-xs mb-1">
+                        <div class="flex-1">
+                            <div class="font-semibold text-blue-800 dark:text-blue-200">${plot.name}</div>
+                            <div class="text-gray-600 dark:text-gray-400">${(plot.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <div class="flex gap-1">
+                            <a href="/download/analysis/${encodeURIComponent(plot.name)}" 
+                               download="${plot.name}"
+                               class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+                                📥 Descargar
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            listHTML += '</div>';
+            
+            const responseDiv = document.getElementById('response') || document.getElementById('history');
+            if (responseDiv) {
+                responseDiv.insertAdjacentHTML('afterbegin', listHTML);
+            }
+        } else {
+            showNotification('info', 'Sin gráficos', 'No hay gráficos de análisis disponibles');
+        }
+    } catch (error) {
+        console.error('Error listando gráficos de análisis:', error);
+        showNotification('error', 'Error', 'No se pudo obtener la lista de gráficos');
+    }
+}
+
+// Modificar la función principal de manejo de respuestas para incluir análisis
+document.addEventListener('DOMContentLoaded', function() {
+    // Interceptar respuestas del backend para detectar resultados de análisis
+    window.addEventListener('analysisResult', function(event) {
+        if (event.detail && event.detail.type === 'analysis_result') {
+            showAnalysisResult(event.detail);
+        }
+    });
+    
+    // También interceptar en el sistema principal de respuestas
+    const originalHandleResponse = window.handleFormResponse || function() {};
+    
+    window.handleFormResponse = function(data) {
+        console.log("Interceptando respuesta para análisis:", data);
+        
+        // Verificar si es una respuesta de análisis
+        if (data.result_type === 'text' && typeof data.result_data === 'object' && data.result_data.type === 'analysis_result') {
+            handleAnalysisResult(data.result_data, data.input, data.tool);
+            return;
+        }
+        
+        // Si no es análisis, usar el manejador original
+        originalHandleResponse(data);
+    };
+});
 
 // Inicializar la integración cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
