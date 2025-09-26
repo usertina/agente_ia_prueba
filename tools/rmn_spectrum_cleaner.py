@@ -554,11 +554,12 @@ ppm,intensidad
             y_clean = self.apply_cleaning_method(y, best_method, params)
             
             # Guardar resultado
-            output_filename = f"{filename.split('.')[0]}_clean_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            output_filename = f"{filename.split('.')[0]}_clean_{timestamp}.csv"
             self.save_cleaned_spectrum(x, y_clean, output_filename, best_method)
             
             # Crear gráfico comparativo
-            plot_filename = f"comparison_{filename.split('.')[0]}_{best_method}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            plot_filename = f"comparison_{filename.split('.')[0]}_{best_method}_{timestamp}.png"
             plot_path = self.create_comparison_plot(x, y, y_clean, filename, best_method, plot_filename)
             
             # Análisis post-limpieza
@@ -568,12 +569,12 @@ ppm,intensidad
             # Calcular tiempo de procesamiento (simulado)
             processing_time = len(x) * 0.001  # Tiempo estimado
             
-            # IMPORTANTE: Devolver diccionario en lugar de string para que JavaScript lo detecte
+            # IMPORTANTE: Devolver diccionario estructurado para que main.py lo detecte
             return {
                 'type': 'clean_result',
                 'original_file': filename,
-                'cleaned_file': f"{self.output_dir}/{output_filename}",
-                'plot_file': plot_path if plot_path else None,
+                'cleaned_file': output_filename,  # Solo el nombre del archivo
+                'plot_file': plot_filename if plot_path else None,  # Solo el nombre del archivo
                 'method': self.cleaning_methods[best_method],
                 'params': params,
                 'snr_improvement': round(improvement, 1),
@@ -582,12 +583,17 @@ ppm,intensidad
                 'processing_time': round(processing_time, 2),
                 'data_points': len(x),
                 'success': True,
-                'message': f"Espectro {filename} limpiado exitosamente con {best_method}"
+                'message': f"Espectro {filename} limpiado exitosamente con {best_method}",
+                # URLs de descarga para el frontend
+                'download_urls': {
+                    'cleaned': f"/download/cleaned/{output_filename}",
+                    'plot': f"/download/plot/{plot_filename}" if plot_path else None
+                }
             }
             
         except Exception as e:
             return f"❌ Error en limpieza automática: {e}"
-    
+        
     def create_comparison_plot(self, x, y_original, y_clean, filename, method, plot_filename):
         """Crea gráfico comparativo antes/después"""
         try:

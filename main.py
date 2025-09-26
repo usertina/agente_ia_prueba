@@ -553,6 +553,15 @@ async def ask(request: Request, user_input: str = Form(...)):
             tool = "rmn_spectrum_cleaner"
             result = rmn_cleaner.run(user_input)
 
+            # Si el resultado es un diccionario de limpieza exitosa
+            if isinstance(result, dict) and result.get('type') == 'clean_result':
+                return JSONResponse({
+                    "result_type": "spectrum_clean",
+                    "result_data": clean_nan_for_json(result),
+                    "input": user_input,
+                    "tool": tool
+                })
+
         # Usar Gemini para elegir la herramienta
         else:
             tool = ask_gemini_for_tool(user_input)
@@ -592,6 +601,14 @@ async def ask(request: Request, user_input: str = Form(...)):
                 "result_type": "open_url",
                 "result_data": result.get("message", "Abriendo URL..."),
                 "url": result["url"],
+                "input": user_input,
+                "tool": tool
+            })
+        elif isinstance(result, dict) and "cleaned_file" in result:
+            # Si contiene 'cleaned_file', es un resultado estructurado de limpieza RMN
+            return JSONResponse({
+                "result_type": "spectrum_clean",
+                "result_data": clean_nan_for_json(result),
                 "input": user_input,
                 "tool": tool
             })
@@ -1083,7 +1100,132 @@ async def list_cleaned_spectra():
             "cleaned": [],
             "count": 0
         }, status_code=500)
+# AGREGAR ESTOS ENDPOINTS AL ARCHIVO main.py después de los endpoints existentes
 
+@app.get("/download/cleaned/{filename}")
+async def download_cleaned_spectrum(filename: str):
+    """Descargar espectro limpio"""
+    file_path = os.path.join(RMN_OUTPUT_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
+
+
+@app.get("/download/plot/{filename}")
+async def download_plot(filename: str):
+    """Descargar gráfico de espectro"""
+    file_path = os.path.join(RMN_PLOTS_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico {filename}")
+
+
+@app.delete("/delete/cleaned/{filename}")
+async def delete_cleaned_spectrum(filename: str):
+    """Eliminar espectro limpio"""
+    try:
+        file_path = os.path.join(RMN_OUTPUT_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Espectro limpio {filename} eliminado correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.delete("/delete/plot/{filename}")
+async def delete_plot(filename: str):
+    """Eliminar gráfico de espectro"""
+    try:
+        file_path = os.path.join(RMN_PLOTS_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Gráfico {filename} eliminado correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró el gráfico {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.get("/list/cleaned")
+async def list_cleaned_spectra():
+    """Listar espectros limpios disponibles"""
+    try:
+        cleaned = []
+        if os.path.exists(RMN_OUTPUT_DIR):
+            for file in os.listdir(RMN_OUTPUT_DIR):
+                if file.endswith('.csv'):
+                    file_path = os.path.join(RMN_OUTPUT_DIR, file)
+                    cleaned.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'spectrum'
+                    })
+        return JSONResponse({
+            "success": True,
+            "cleaned": cleaned,
+            "count": len(cleaned)
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "cleaned": [],
+            "count": 0
+        }, status_code=500)
+
+
+@app.get("/list/plots")
+async def list_plots():
+    """Listar gráficos disponibles"""
+    try:
+        plots = []
+        if os.path.exists(RMN_PLOTS_DIR):
+            for file in os.listdir(RMN_PLOTS_DIR):
+                if file.endswith('.png'):
+                    file_path = os.path.join(RMN_PLOTS_DIR, file)
+                    plots.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'plot'
+                    })
+        return JSONResponse({
+            "success": True,
+            "plots": plots,
+            "count": len(plots)
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "plots": [],
+            "count": 0
+        }, status_code=500)
 
 # -------------------- Archivos y Notas --------------------
 
