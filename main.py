@@ -1,3 +1,6 @@
+import math
+import mimetypes
+import urllib
 from fastapi import FastAPI, Form, Request, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,9 +14,8 @@ from multi_user_notification_system import multi_user_system
 from datetime import datetime
 import asyncio
 import shutil
-from tools.rmn_spectrum_cleaner import rmn_cleaner
-
-
+# Importamos la herramienta rmn_cleaner (asumiendo que está en tools.rmn_spectrum_cleaner)
+from tools.rmn_spectrum_cleaner import rmn_cleaner 
 
 
 load_dotenv()
@@ -34,6 +36,155 @@ OUTPUT_DIR = "output_docs"
 
 for dir_path in [TEMPLATES_DIR, DATA_DIR, OUTPUT_DIR]:
     os.makedirs(dir_path, exist_ok=True)
+
+
+# Directorios para espectros RMN
+RMN_INPUT_DIR = "rmn_spectra/input"
+RMN_OUTPUT_DIR = "rmn_spectra/output" 
+RMN_PLOTS_DIR = "rmn_spectra/plots"
+
+for dir_path in [RMN_INPUT_DIR, RMN_OUTPUT_DIR, RMN_PLOTS_DIR]:
+    os.makedirs(dir_path, exist_ok=True)
+
+
+def clean_nan_for_json(obj):
+    """Recorre dicts/lists y reemplaza float NaN/inf por None, para serialización JSON."""
+    if isinstance(obj, dict):
+        return {k: clean_nan_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [clean_nan_for_json(v) for v in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    else:
+        return obj
+
+@app.post("/ask")
+async def ask(request: Request, user_input: str = Form(...)):
+    """Procesar comandos del usuario"""
+    user_input_strip = user_input.strip().lower()
+    current_user_id = get_current_user_id(request)
+    
+    print(f"🔄 Procesando comando '{user_input}' para usuario {current_user_id[:12]}...")
+
+    try:
+        # --- Lógica de enrutamiento simplificada para el ejemplo ---
+
+        if user_input_strip in ["leer", "borrar", "descargar", "contar"] or \
+           user_input_strip.startswith("guardar:") or user_input_strip.startswith("buscar:"):
+            tool = "note"
+            result = use_tool(tool, user_input)
+            
+        elif user_input_strip.startswith("buscar "):
+            tool = "web_search"
+            query = user_input[7:].strip()
+
+            if query.startswith(("http://", "https://")) or "." in query:
+                if not query.startswith(("http://", "https://")):
+                    query = "https://" + query
+
+                url_to_open = web_search_run(query) 
+                return JSONResponse({
+                    "result_type": "open_url",
+                    "result_data": f"Abriendo {query}",
+                    "url": url_to_open,
+                    "input": user_input,
+                    "tool": tool
+                })
+            else:
+                result = web_search_formatted(query)
+                return JSONResponse({
+                    "result_type": "list",
+                    "result_data": result,
+                    "input": user_input,
+                    "tool": tool
+                })
+
+        elif any(keyword in user_input_strip for keyword in [
+            "status", "start", "stop", "iniciar", "detener", "test", "probar",
+            "activar emails", "activar patentes", "activar papers", "debug"
+        ]) or user_input_strip.startswith("keywords") or user_input_strip.startswith("categories:"):
+
+            tool = "notifications"
+            import tools.notifications as notif_tool
+            notif_tool.set_current_user_id(current_user_id)
+            result = notif_tool.run(user_input)
+
+        elif any(keyword in user_input_strip for keyword in ["generar", "genera", "crear codigo", "crear script", "escribir codigo"]):
+            tool = "code_gen"
+            result = use_tool(tool, user_input)
+
+        # Manejo específico de comandos RMN que devuelven dict|str
+        elif "limpiar:" in user_input_strip or "analizar:" in user_input_strip or "comparar:" in user_input_strip or "exportar:" in user_input_strip:
+            tool = "rmn_spectrum_cleaner"
+            result = rmn_cleaner.run(user_input)
+            
+        else:
+            # Usar Gemini para elegir la herramienta (si no es un comando directo)
+            tool = ask_gemini_for_tool(user_input)
+            print(f"🔧 Gemini eligió herramienta: {tool}")
+
+            if tool == "notifications":
+                import tools.notifications as notif_tool
+                notif_tool.set_current_user_id(current_user_id)
+            
+            result = use_tool(tool, user_input)
+
+        # ------------------------------------------------------------------
+        # Paso CRÍTICO: Limpiar NaNs del resultado antes de la serialización
+        # ------------------------------------------------------------------
+        if isinstance(result, dict):
+            result = clean_nan_for_json(result)
+
+        # Preparar respuesta
+        if isinstance(result, dict) and "cleaned_file" in result:
+             # Si contiene 'cleaned_file', es un resultado estructurado de limpieza RMN
+            return JSONResponse({
+                "result_type": "spectrum_clean",
+                "result_data": result,
+                "input": user_input,
+                "tool": tool
+            })
+        elif isinstance(result, list):
+            return JSONResponse({
+                "result_type": "list",
+                "result_data": result,
+                "input": user_input,
+                "tool": tool
+            })
+        elif isinstance(result, dict) and "url" in result:
+            return JSONResponse({
+                "result_type": "open_url",
+                "result_data": result.get("message", "Abriendo URL..."),
+                "url": result["url"],
+                "input": user_input,
+                "tool": tool
+            })
+        else:
+            return JSONResponse({
+                "result_type": "text",
+                "result_data": str(result),
+                "input": user_input,
+                "tool": tool
+            })
+            
+    except Exception as e:
+        # Aquí también limpiamos el error por si contiene NaNs que causen problemas
+        error_detail = str(e)
+        print(f"❌ Error procesando comando: {error_detail}")
+        return JSONResponse({
+            "result_type": "error",
+            "result_data": f"Error: {error_detail}",
+            "input": user_input,
+            "tool": "error"
+        }, status_code=500)
+
+# El resto de los endpoints (uploads, downloads, files, etc.) no requieren cambios críticos
+# para este error, pero se mantienen para la integridad.
+# ...
+# [Mantenemos el resto de tus endpoints aquí para que el archivo sea completo]
+# ...
 
 @app.post("/upload/template")
 async def upload_template(file: UploadFile = File(...)):
@@ -243,7 +394,7 @@ async def delete_data_file(filename: str):
         return JSONResponse({
             "success": False,
             "error": str(e)
-        }, status_code=500)    
+        }, status_code=500) 
 
 
 @app.on_event("startup")
@@ -355,20 +506,16 @@ async def ask(request: Request, user_input: str = Form(...)):
            user_input_strip.startswith("guardar:") or user_input_strip.startswith("buscar:"):
             tool = "note"
             result = use_tool(tool, user_input)
-
-       
-            # Manejar búsquedas web directamente
+            
         elif user_input_strip.startswith("buscar "):
             tool = "web_search"
             query = user_input[7:].strip()
 
-            # Detectar si es una URL directa
             if query.startswith(("http://", "https://")) or "." in query:
-                # Añadir https si no tiene protocolo
                 if not query.startswith(("http://", "https://")):
                     query = "https://" + query
 
-                url_to_open = web_search_run(query)  # Tu función run prepara la URL
+                url_to_open = web_search_run(query) 
                 return JSONResponse({
                     "result_type": "open_url",
                     "result_data": f"Abriendo {query}",
@@ -377,7 +524,6 @@ async def ask(request: Request, user_input: str = Form(...)):
                     "tool": tool
                 })
             else:
-                # Búsqueda normal en web
                 result = web_search_formatted(query)
                 return JSONResponse({
                     "result_type": "list",
@@ -386,46 +532,55 @@ async def ask(request: Request, user_input: str = Form(...)):
                     "tool": tool
                 })
 
-        # Manejar notificaciones directamente - CORREGIDO
+        # Manejar notificaciones directamente
         elif any(keyword in user_input_strip for keyword in [
             "status", "start", "stop", "iniciar", "detener", "test", "probar",
             "activar emails", "activar patentes", "activar papers", "debug"
-        ]) or \
-            user_input_strip.startswith("keywords") or \
-            user_input_strip.startswith("categories:"):
+        ]) or user_input_strip.startswith("keywords") or user_input_strip.startswith("categories:"):
 
             tool = "notifications"
-            
-            # IMPORTANTE: Establecer el user_id antes de ejecutar la herramienta
             import tools.notifications as notif_tool
             notif_tool.set_current_user_id(current_user_id)
-
-            try:
-                result = notif_tool.run(user_input)
-                print(f"✅ Resultado notificaciones: {result[:100]}...")
-            except Exception as e:
-                print(f"❌ Error en notifications tool: {e}")
-                result = f"❌ Error en sistema de notificaciones: {e}"
+            result = notif_tool.run(user_input)
 
         # Generación de código
         elif any(keyword in user_input_strip for keyword in ["generar", "genera", "crear codigo", "crear script", "escribir codigo"]):
             tool = "code_gen"
             result = use_tool(tool, user_input)
 
+        # Manejo específico de comandos RMN que devuelven dict|str
+        elif "limpiar:" in user_input_strip or "analizar:" in user_input_strip or "comparar:" in user_input_strip or "exportar:" in user_input_strip:
+            tool = "rmn_spectrum_cleaner"
+            result = rmn_cleaner.run(user_input)
+
         # Usar Gemini para elegir la herramienta
         else:
             tool = ask_gemini_for_tool(user_input)
             print(f"🔧 Gemini eligió herramienta: {tool}")
 
-            # Si Gemini eligió notificaciones, configurar user_id
             if tool == "notifications":
                 import tools.notifications as notif_tool
                 notif_tool.set_current_user_id(current_user_id)
-
+            
             result = use_tool(tool, user_input)
 
+        # ------------------------------------------------------------------
+        # Paso CRÍTICO: Limpiar NaNs del resultado antes de la serialización
+        # ------------------------------------------------------------------
+        if isinstance(result, dict):
+            # Asegura que todos los valores flotantes NaN/inf son convertidos a None
+            result = clean_nan_for_json(result) 
+
         # Preparar respuesta
-        if isinstance(result, list):
+        if isinstance(result, dict) and "cleaned_file" in result:
+             # Si contiene 'cleaned_file', es un resultado estructurado de limpieza RMN
+            return JSONResponse({
+                "result_type": "spectrum_clean",
+                "result_data": result,
+                "input": user_input,
+                "tool": tool
+            })
+        elif isinstance(result, list):
             return JSONResponse({
                 "result_type": "list",
                 "result_data": result,
@@ -449,23 +604,321 @@ async def ask(request: Request, user_input: str = Form(...)):
             })
             
     except Exception as e:
-        print(f"❌ Error procesando comando: {e}")
+        error_detail = str(e)
+        print(f"❌ Error procesando comando: {error_detail}")
         return JSONResponse({
             "result_type": "error",
-            "result_data": f"Error: {str(e)}",
+            "result_data": f"Error: {error_detail}",
             "input": user_input,
             "tool": "error"
         }, status_code=500)
     
-# Añade esto a main.py después de los otros endpoints
 
-# Directorios para espectros RMN
-RMN_INPUT_DIR = "rmn_spectra/input"
-RMN_OUTPUT_DIR = "rmn_spectra/output" 
-RMN_PLOTS_DIR = "rmn_spectra/plots"
+@app.post("/upload/template")
+async def upload_template(file: UploadFile = File(...)):
+    """Subir plantilla de documento"""
+    try:
+        # Validar formato
+        allowed_extensions = ['.docx', '.txt', '.pdf']
+        file_extension = '.' + file.filename.split('.')[-1].lower()
+        
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Formato no soportado. Use: {', '.join(allowed_extensions)}"
+            )
+        
+        # Guardar archivo
+        file_path = os.path.join(TEMPLATES_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Plantilla {file.filename} subida correctamente",
+            "filename": file.filename,
+            "location": f"{TEMPLATES_DIR}/{file.filename}",
+            "next_step": f"Analiza la plantilla con: 'analizar: {file.filename}'"
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
-for dir_path in [RMN_INPUT_DIR, RMN_OUTPUT_DIR, RMN_PLOTS_DIR]:
-    os.makedirs(dir_path, exist_ok=True)
+
+@app.post("/upload/data")
+async def upload_data(file: UploadFile = File(...)):
+    """Subir archivo de datos"""
+    try:
+        # Validar formato
+        allowed_extensions = ['.json', '.csv', '.xlsx', '.txt']
+        file_extension = '.' + file.filename.split('.')[-1].lower()
+        
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Formato no soportado. Use: {', '.join(allowed_extensions)}"
+            )
+        
+        # Guardar archivo
+        file_path = os.path.join(DATA_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Archivo de datos {file.filename} subido correctamente",
+            "filename": file.filename,
+            "location": f"{DATA_DIR}/{file.filename}",
+            "next_step": f"Usa: 'rellenar: plantilla.docx con {file.filename}'"
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.get("/files/documents")
+async def get_document_files():
+    """Obtener lista de archivos de documentos"""
+    try:
+        templates = []
+        data_files = []
+        output_files = []
+        
+        # Listar plantillas
+        if os.path.exists(TEMPLATES_DIR):
+            for file in os.listdir(TEMPLATES_DIR):
+                if any(file.endswith(ext) for ext in ['.docx', '.txt', '.pdf']):
+                    file_path = os.path.join(TEMPLATES_DIR, file)
+                    templates.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'template'
+                    })
+        
+        # Listar datos
+        if os.path.exists(DATA_DIR):
+            for file in os.listdir(DATA_DIR):
+                if any(file.endswith(ext) for ext in ['.json', '.csv', '.xlsx', '.txt']):
+                    file_path = os.path.join(DATA_DIR, file)
+                    data_files.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'data'
+                    })
+        
+        # Listar documentos generados
+        if os.path.exists(OUTPUT_DIR):
+            for file in os.listdir(OUTPUT_DIR):
+                file_path = os.path.join(OUTPUT_DIR, file)
+                if os.path.isfile(file_path):
+                    output_files.append({
+                        'name': file,
+                        'size': os.path.getsize(file_path),
+                        'modified': os.path.getmtime(file_path),
+                        'type': 'output'
+                    })
+        
+        return JSONResponse({
+            "templates": templates,
+            "data_files": data_files,
+            "output_files": output_files,
+            "total": len(templates) + len(data_files) + len(output_files)
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "templates": [],
+            "data_files": [],
+            "output_files": [],
+            "total": 0,
+            "error": str(e)
+        })
+
+
+@app.get("/download/template/{filename}")
+async def download_template(filename: str):
+    """Descargar plantilla"""
+    file_path = os.path.join(TEMPLATES_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró la plantilla {filename}")
+
+
+@app.get("/download/data/{filename}")
+async def download_data_file(filename: str):
+    """Descargar archivo de datos"""
+    file_path = os.path.join(DATA_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el archivo {filename}")
+
+
+@app.get("/download/output/{filename}")
+async def download_output_file(filename: str):
+    """Descargar documento generado"""
+    file_path = os.path.join(OUTPUT_DIR, filename)
+    if os.path.exists(file_path):
+        return FileResponse(
+            file_path, 
+            filename=filename, 
+            media_type="application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    raise HTTPException(status_code=404, detail=f"No se encontró el documento {filename}")
+
+
+@app.delete("/delete/template/{filename}")
+async def delete_template(filename: str):
+    """Eliminar plantilla"""
+    try:
+        file_path = os.path.join(TEMPLATES_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Plantilla {filename} eliminada correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró la plantilla {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.delete("/delete/data/{filename}")
+async def delete_data_file(filename: str):
+    """Eliminar archivo de datos"""
+    try:
+        file_path = os.path.join(DATA_DIR, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return JSONResponse({
+                "success": True,
+                "message": f"Archivo de datos {filename} eliminado correctamente"
+            })
+        else:
+            raise HTTPException(status_code=404, detail=f"No se encontró el archivo {filename}")
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500) 
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicializar el sistema al startup"""
+    try:
+        # Inicializar la base de datos
+        multi_user_system.init_database()
+        
+        # Iniciar monitoreo en background
+        success = multi_user_system.start_background_monitoring()
+        if success:
+            print("🚀 Sistema de notificaciones multi-usuario iniciado correctamente")
+        else:
+            print("⚠️ Sistema de notificaciones ya estaba ejecutándose")
+    except Exception as e:
+        print(f"❌ Error iniciando sistema de notificaciones: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Detener el sistema al shutdown"""
+    try:
+        multi_user_system.stop_background_monitoring()
+        print("⏹️ Sistema de notificaciones detenido correctamente")
+    except Exception as e:
+        print(f"⚠️ Error deteniendo sistema: {e}")
+
+
+def get_client_info(request: Request):
+    """Extrae información del cliente"""
+    return {
+        "ip": request.client.host,
+        "user_agent": request.headers.get("user-agent", ""),
+    }
+
+
+def get_current_user_id(request: Request) -> str:
+    """Obtiene el user_id del usuario actual"""
+    client_info = get_client_info(request)
+    user_id = multi_user_system.generate_user_id(client_info["ip"], client_info["user_agent"])
+    return user_id
+
+
+def web_search_formatted(query: str):
+    """Wrapper para web_search que devuelve formato apropiado para la interfaz"""
+    try:
+        from googleapiclient.discovery import build
+        API_KEY = os.getenv("GOOGLE_CSE_API_KEY")
+        CSE_ID = os.getenv("GOOGLE_CSE_ID")
+        
+        if not API_KEY or not CSE_ID:
+            return [{"title": "Error", "link": "", "snippet": "Google Search API no configurado"}]
+        
+        service = build("customsearch", "v1", developerKey=API_KEY)
+        res = service.cse().list(q=query, cx=CSE_ID, num=5).execute()
+        items = res.get("items", [])
+        
+        if not items:
+            return []
+        
+        resultados = []
+        for item in items:
+            resultados.append({
+                "title": item.get("title", "Sin título"),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", "Sin descripción")
+            })
+        return resultados
+    except Exception as e:
+        return [{"title": "Error", "link": "", "snippet": f"Error en la búsqueda: {e}"}]
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """Página principal"""
+    try:
+        # Registrar usuario automáticamente
+        client_info = get_client_info(request)
+        device_info = {
+            'device_name': f'Web-{request.headers.get("user-agent", "Unknown")[:20]}...'
+        }
+        
+        user_id, session_id, config = multi_user_system.register_user(
+            client_info["ip"], 
+            client_info["user_agent"], 
+            device_info
+        )
+        
+        print(f"📱 Usuario registrado: {user_id[:12]}... desde {client_info['ip']}")
+        
+    except Exception as e:
+        print(f"⚠️ Error registrando usuario: {e}")
+    
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.post("/upload/spectrum")
 async def upload_spectrum(file: UploadFile = File(...)):
@@ -564,23 +1017,6 @@ async def download_spectrum(filename: str):
     raise HTTPException(status_code=404, detail=f"No se encontró el espectro {filename}")
 
 
-from fastapi.responses import FileResponse
-
-@app.get("/download/cleaned/{filename}")
-async def download_cleaned(filename: str):
-    file_path = os.path.join(RMN_OUTPUT_DIR, filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path, filename=filename, media_type="application/octet-stream")
-    raise HTTPException(status_code=404, detail=f"No se encontró el espectro limpio {filename}")
-
-@app.get("/download/plot/{filename}")
-async def download_plot(filename: str):
-    file_path = os.path.join(RMN_PLOTS_DIR, filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path, filename=filename, media_type="image/png")
-    raise HTTPException(status_code=404, detail=f"No se encontró el plot {filename}")
-
-
 @app.delete("/delete/spectrum/{filename}")
 async def delete_spectrum(filename: str):
     """Eliminar espectro original"""
@@ -619,7 +1055,6 @@ async def delete_cleaned_spectrum(filename: str):
             "success": False,
             "error": str(e)
         }, status_code=500)
-    
 
 @app.get("/list/cleaned")
 async def list_cleaned_spectra():
