@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -186,8 +187,8 @@ class RMNSpectrumCleaner:
    • **Picos de ruido** → median
    • **Deriva de base** → polynomial
    • **Ruido complejo** → auto (recomendado)
-        """
-    
+
+        """    
     def list_spectra(self) -> str:
         """Lista los espectros disponibles"""
         try:
@@ -240,6 +241,24 @@ ppm,intensidad
             
         except Exception as e:
             return f"❌ Error listando espectros: {e}"
+        
+
+    def parse_value(self, value):
+        """
+        Convierte un valor en float. Si es un rango tipo '-85.1326 - -85.1226',
+        devuelve el promedio de ambos.
+        """
+        import re
+        if isinstance(value, (int, float)):
+            return float(value)
+        
+        value = str(value).strip()
+        match = re.match(r'^(-?\d+\.?\d*)\s*-\s*(-?\d+\.?\d*)$', value)
+        if match:
+            a, b = float(match.group(1)), float(match.group(2))
+            return (a + b) / 2
+        return float(value)
+
     
     def load_spectrum_data(self, file_path: str):
         """Carga datos del espectro desde diferentes formatos"""
@@ -277,9 +296,9 @@ ppm,intensidad
             if len(x) != len(y) or len(x) < 10:
                 return None, None
                 
-            # Convertir a float para evitar problemas
-            x = x.astype(float)
-            y = y.astype(float)
+            x = np.array([self.parse_value(v) for v in x])
+            y = np.array([self.parse_value(v) for v in y])
+    
                 
             return x, y
             
