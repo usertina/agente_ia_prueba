@@ -384,6 +384,178 @@ async function uploadSpectrum(event) {
             if (result.next_step) {
                 showInfoMessage(`💡 Siguiente paso: ${result.next_step}`);
             }
+            loadRMNStats();
+            event.target.value = '';
+        } else {
+            showErrorMessage(result.error || 'Error subiendo espectro');
+        }
+    } catch (error) {
+        showErrorMessage(`Error subiendo espectro: ${error.message}`);
+    }
+}
+
+async function loadRMNStats() {
+    try {
+        const response = await fetch('/files/spectra');
+        const data = await response.json();
+        
+        const statsElement = document.getElementById('rmn-stats');
+        if (statsElement) {
+            const spectraCount = data.spectra ? data.spectra.length : 0;
+            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
+            const plotsCount = data.plots ? data.plots.length : 0;
+            
+            statsElement.textContent = `Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}`;
+        }
+    } catch (error) {
+        console.error('Error cargando estadísticas RMN:', error);
+    }
+}
+
+// =============================================================================
+// FUNCIONES PARA DOCUMENTOS
+// =============================================================================
+
+function toggleDocumentSection() {
+    const section = document.getElementById('document-section');
+    const button = document.getElementById('document-toggle');
+    
+    if (section.classList.contains('hidden')) {
+        section.classList.remove('hidden');
+        button.innerHTML = '📄 Documentos ▼';
+        loadDocumentFiles();
+    } else {
+        section.classList.add('hidden');
+        button.innerHTML = '📄 Documentos ▶';
+    }
+}
+
+function toggleDocumentTab(tab) {
+    const content = document.getElementById(`${tab}-content`);
+    const toggle = document.getElementById(`${tab}-toggle`);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        toggle.textContent = '▼';
+    } else {
+        content.classList.add('hidden');
+        toggle.textContent = '▶';
+    }
+}
+
+async function loadDocumentFiles() {
+    try {
+        const response = await fetch('/files/documents');
+        const data = await response.json();
+        
+        updateDocumentStats(data);
+        updateTemplatesList(data.templates || []);
+        updateDataFilesList(data.data_files || []);
+        updateOutputFilesList(data.output_files || []);
+    } catch (error) {
+        console.error('Error cargando archivos de documentos:', error);
+    }
+}
+
+function updateDocumentStats(data) {
+    const statsElement = document.getElementById('document-stats');
+    if (statsElement) {
+        const templatesCount = data.templates ? data.templates.length : 0;
+        const dataCount = data.data_files ? data.data_files.length : 0;
+        const outputCount = data.output_files ? data.output_files.length : 0;
+        statsElement.textContent = `Plantillas: ${templatesCount} | Datos: ${dataCount} | Generados: ${outputCount}`;
+    }
+}
+
+function updateTemplatesList(templates) {
+    const container = document.getElementById('templates-list');
+    if (!container) return;
+    
+    if (templates.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay plantillas</p>';
+        return;
+    }
+    
+    container.innerHTML = templates.map(file => `
+        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
+            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
+            <div class="flex space-x-1 ml-1">
+                <button onclick="analyzeTemplate('${file.name}')" class="text-blue-600 hover:text-blue-800 text-sm" title="Analizar">🔍</button>
+                <a href="/download/template/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateDataFilesList(dataFiles) {
+    const container = document.getElementById('data-files-list');
+    if (!container) return;
+    
+    if (dataFiles.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay archivos de datos</p>';
+        return;
+    }
+    
+    container.innerHTML = dataFiles.map(file => `
+        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
+            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
+            <div class="flex space-x-1 ml-1">
+                <a href="/download/data/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateOutputFilesList(outputFiles) {
+    const container = document.getElementById('output-files-list');
+    if (!container) return;
+    
+    if (outputFiles.length === 0) {
+        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay documentos generados</p>';
+        return;
+    }
+    
+    container.innerHTML = outputFiles.map(file => `
+        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
+            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
+            <div class="flex space-x-1 ml-1">
+                <a href="/download/output/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+function analyzeTemplate(filename) {
+    const input = document.getElementById('user_input');
+    input.value = `analizar: ${filename}`;
+    document.getElementById('commandForm').dispatchEvent(new Event('submit'));
+}
+
+async function uploadTemplate() {
+    const fileInput = document.getElementById('template-file-input');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showErrorMessage('Selecciona un archivo de plantilla');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/upload/template', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccessMessage(result.message);
+            if (result.next_step) {
+                showInfoMessage(`💡 Siguiente paso: ${result.next_step}`);
+            }
             loadDocumentFiles();
             fileInput.value = '';
         } else {
@@ -635,176 +807,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 </body>
-</html> response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            if (result.next_step) {
-                showInfoMessage(`💡 Siguiente paso: ${result.next_step}`);
-            }
-            loadRMNStats();
-            event.target.value = '';
-        } else {
-            showErrorMessage(result.error || 'Error subiendo espectro');
-        }
-    } catch (error) {
-        showErrorMessage(`Error subiendo espectro: ${error.message}`);
-    }
-}
-
-async function loadRMNStats() {
-    try {
-        const response = await fetch('/files/spectra');
-        const data = await response.json();
-        
-        const statsElement = document.getElementById('rmn-stats');
-        if (statsElement) {
-            const spectraCount = data.spectra ? data.spectra.length : 0;
-            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
-            const plotsCount = data.plots ? data.plots.length : 0;
-            
-            statsElement.textContent = `Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}`;
-        }
-    } catch (error) {
-        console.error('Error cargando estadísticas RMN:', error);
-    }
-}
-
-// =============================================================================
-// FUNCIONES PARA DOCUMENTOS
-// =============================================================================
-
-function toggleDocumentSection() {
-    const section = document.getElementById('document-section');
-    const button = document.getElementById('document-toggle');
-    
-    if (section.classList.contains('hidden')) {
-        section.classList.remove('hidden');
-        button.innerHTML = '📄 Documentos ▼';
-        loadDocumentFiles();
-    } else {
-        section.classList.add('hidden');
-        button.innerHTML = '📄 Documentos ▶';
-    }
-}
-
-function toggleDocumentTab(tab) {
-    const content = document.getElementById(`${tab}-content`);
-    const toggle = document.getElementById(`${tab}-toggle`);
-    
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        toggle.textContent = '▼';
-    } else {
-        content.classList.add('hidden');
-        toggle.textContent = '▶';
-    }
-}
-
-async function loadDocumentFiles() {
-    try {
-        const response = await fetch('/files/documents');
-        const data = await response.json();
-        
-        updateDocumentStats(data);
-        updateTemplatesList(data.templates || []);
-        updateDataFilesList(data.data_files || []);
-        updateOutputFilesList(data.output_files || []);
-    } catch (error) {
-        console.error('Error cargando archivos de documentos:', error);
-    }
-}
-
-function updateDocumentStats(data) {
-    const statsElement = document.getElementById('document-stats');
-    if (statsElement) {
-        const templatesCount = data.templates ? data.templates.length : 0;
-        const dataCount = data.data_files ? data.data_files.length : 0;
-        const outputCount = data.output_files ? data.output_files.length : 0;
-        statsElement.textContent = `Plantillas: ${templatesCount} | Datos: ${dataCount} | Generados: ${outputCount}`;
-    }
-}
-
-function updateTemplatesList(templates) {
-    const container = document.getElementById('templates-list');
-    if (!container) return;
-    
-    if (templates.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay plantillas</p>';
-        return;
-    }
-    
-    container.innerHTML = templates.map(file => `
-        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
-            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
-            <div class="flex space-x-1 ml-1">
-                <button onclick="analyzeTemplate('${file.name}')" class="text-blue-600 hover:text-blue-800 text-sm" title="Analizar">🔍</button>
-                <a href="/download/template/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateDataFilesList(dataFiles) {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    
-    if (dataFiles.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay archivos de datos</p>';
-        return;
-    }
-    
-    container.innerHTML = dataFiles.map(file => `
-        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
-            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
-            <div class="flex space-x-1 ml-1">
-                <a href="/download/data/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateOutputFilesList(outputFiles) {
-    const container = document.getElementById('output-files-list');
-    if (!container) return;
-    
-    if (outputFiles.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay documentos generados</p>';
-        return;
-    }
-    
-    container.innerHTML = outputFiles.map(file => `
-        <div class="flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1">
-            <span class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">${file.name}</span>
-            <div class="flex space-x-1 ml-1">
-                <a href="/download/output/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        </div>
-    `).join('');
-}
-
-function analyzeTemplate(filename) {
-    const input = document.getElementById('user_input');
-    input.value = `analizar: ${filename}`;
-    document.getElementById('commandForm').dispatchEvent(new Event('submit'));
-}
-
-async function uploadTemplate() {
-    const fileInput = document.getElementById('template-file-input');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        showErrorMessage('Selecciona un archivo de plantilla');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('/upload/template', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await
+</html>
