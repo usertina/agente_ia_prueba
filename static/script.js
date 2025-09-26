@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Variables globales para notificaciones
+    // NOTA: 'let' a nivel de window es mejor, pero aquí lo mantengo dentro de DOMContentLoaded
+    // para mantener el patrón original. Expondré solo las funciones.
     let userId = null;
     let notificationCheckInterval = null;
 
@@ -24,140 +26,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('✅ Elementos encontrados correctamente');
 
-    // 🌙 Configuración inicial del tema
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && prefersDark)) {
-        document.documentElement.classList.add('dark');
-        if (themeIcon) themeIcon.textContent = '☀️';
-    } else {
-        document.documentElement.classList.remove('dark');
-        if (themeIcon) themeIcon.textContent = '🌙';
+    // 🔒 Escape para prevenir XSS (Mantenida en el scope para ser usada internamente)
+    function escapeHtml(str) {
+        if (typeof str !== 'string') return str;
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    // 🌓 Cambiar tema
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.theme = 'light';
-                if (themeIcon) themeIcon.textContent = '🌙';
+    // =========================================================================
+    // 🔔 FUNCIONES DE NOTIFICACIÓN (Expuestas a Window)
+    // =========================================================================
+
+    function getNotificationIcon(type) {
+        const icons = {
+            'email': '📧',
+            'patent': '🔬',
+            'paper': '📚',
+            'test': '🧪'
+        };
+        return icons[type] || '🔔';
+    }
+
+    // Expuesta a window para que el HTML pueda llamar a los botones
+    window.updateNotificationStatus = function(status = null) {
+        const statusEl = document.getElementById('notification-status');
+        if (statusEl) {
+            if (status) {
+                statusEl.textContent = `Estado: ${status}`;
             } else {
-                document.documentElement.classList.add('dark');
-                localStorage.theme = 'dark';
-                if (themeIcon) themeIcon.textContent = '☀️';
+                statusEl.textContent = userId ? 
+                    `Estado: ✅ Activo (${userId.substring(0, 8)}...)` : 
+                    'Estado: ⏳ Iniciando...';
             }
-        });
-    }
-
-    // 🔔 Inicializar sistema de notificaciones
-    initializeNotificationSystem();
-
-    // 📤 Envío del formulario principal
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const userInput = input.value.trim();
-        if (userInput === "") return;
-
-        console.log('📤 Enviando comando:', userInput);
-
-        showLoading(true);
-        input.disabled = true;
-
-        // Ocultar guía inicial
-        const guideSection = document.getElementById('guide-section');
-        if (guideSection && guideSection.style.display !== 'none') {
-            guideSection.style.display = 'none';
-        }
-
-        try {
-            const response = await fetch('/ask', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({ 'user_input': userInput })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('📦 Respuesta recibida:', data);
-                
-                renderResult(data);
-
-                // Actualizar archivos si es necesario
-                if (data.tool === "save_code" || data.tool === "code_gen" || data.tool === "note") {
-                    setTimeout(fetchFiles, 500);
-                }
-
-                // Si es comando de notificaciones, actualizar estado
-                if (data.tool === "notifications") {
-                    setTimeout(() => {
-                        checkNotifications();
-                        updateNotificationStatus();
-                    }, 1000);
-                }
-
-                // Si es comando de RMN y devuelve resultado de limpieza
-                if (data.tool === "rmn_spectrum_cleaner" && data.result_data && typeof data.result_data === 'object') {
-                    if (data.result_data.type === 'clean_result') {
-                        showCleanResult(data.result_data);
-                    }
-                }
-
-            } else {
-                const errorData = await response.json().catch(() => ({ detail: "Error desconocido" }));
-                renderError(errorData.detail || "Ocurrió un error inesperado.");
-            }
-
-        } catch (error) {
-            console.error("❌ Error en fetch:", error);
-            renderError("No se pudo conectar con el servidor.");
-        } finally {
-            showLoading(false);
-            input.disabled = false;
-            input.value = '';
-        }
-    });
-
-    // 🔔 Funciones de notificaciones
-    async function initializeNotificationSystem() {
-        try {
-            const response = await fetch('/notifications/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    device_name: `Web-${navigator.userAgent.substring(0, 20)}...`,
-                    device_id: `web_${Date.now()}`
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    userId = data.user_id;
-                    console.log(`🔔 Usuario registrado: ${userId.substring(0, 12)}...`);
-                    startNotificationPolling();
-                    updateNotificationStatus("✅ Conectado");
-                }
-            }
-        } catch (error) {
-            console.error("❌ Error inicializando notificaciones:", error);
-            updateNotificationStatus("⚠️ Offline");
         }
     }
 
-    function startNotificationPolling() {
+    window.startNotificationPolling = function() {
         if (notificationCheckInterval) {
             clearInterval(notificationCheckInterval);
         }
-        checkNotifications();
-        notificationCheckInterval = setInterval(checkNotifications, 30000);
+        window.checkNotifications();
+        notificationCheckInterval = setInterval(window.checkNotifications, 30000);
     }
-
-    async function checkNotifications() {
+    
+    // Función central para verificar notificaciones (Expuesta a window)
+    window.checkNotifications = async function() {
         if (!userId) return;
 
         try {
@@ -180,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Lógica para mostrar en el historial (Mantenida como función interna)
     function showNotificationInHistory(notification) {
         const entry = document.createElement('div');
         entry.className = 'entry p-4 bg-blue-50 dark:bg-blue-900 rounded-lg shadow-md border-l-4 border-blue-500';
@@ -221,7 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         historyDiv.prepend(entry);
         entry.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
+    
+    // Lógica de notificación del navegador (Mantenida como función interna)
     function showBrowserNotification(notification) {
         if ('Notification' in window && Notification.permission === 'granted') {
             const notifData = notification.data || {};
@@ -244,32 +163,154 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+    
+    // Lógica de inicialización (Mantenida como función interna)
+    async function initializeNotificationSystem() {
+        try {
+            const response = await fetch('/notifications/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_name: `Web-${navigator.userAgent.substring(0, 20)}...`,
+                    device_id: `web_${Date.now()}`
+                })
+            });
 
-    function getNotificationIcon(type) {
-        const icons = {
-            'email': '📧',
-            'patent': '🔬',
-            'paper': '📚',
-            'test': '🧪'
-        };
-        return icons[type] || '🔔';
-    }
-
-    function updateNotificationStatus(status = null) {
-        const statusEl = document.getElementById('notification-status');
-        if (statusEl) {
-            if (status) {
-                statusEl.textContent = `Estado: ${status}`;
-            } else {
-                statusEl.textContent = userId ? 
-                    `Estado: ✅ Activo (${userId.substring(0, 8)}...)` : 
-                    'Estado: ⏳ Iniciando...';
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    userId = data.user_id;
+                    console.log(`🔔 Usuario registrado: ${userId.substring(0, 12)}...`);
+                    window.startNotificationPolling();
+                    window.updateNotificationStatus("✅ Conectado");
+                }
             }
+        } catch (error) {
+            console.error("❌ Error inicializando notificaciones:", error);
+            window.updateNotificationStatus("⚠️ Offline");
         }
     }
 
+    // =========================================================================
+    // FUNCIONES GLOBALES PARA BOTONES DE NOTIFICACIÓN
+    // Estas funciones deben estar en el ámbito de Window, al igual que los demás 
+    // controladores de botones del panel lateral que te proporcioné antes.
+    // =========================================================================
+
+    // Nueva función expuesta a Window para el botón "⚙️ Configurar"
+    window.configureNotifications = function() {
+        // Asume que el comando 'configurar' es manejado por el backend
+        input.value = 'control configurar';
+        form.dispatchEvent(new Event('submit'));
+    }
+
+    // Nueva función expuesta a Window para el botón "🧪 Probar"
+    window.testNotifications = function() {
+        // Asume que el comando 'test' es manejado por el backend
+        input.value = 'control test';
+        form.dispatchEvent(new Event('submit'));
+    }
+
+
+    // 🌙 Configuración inicial del tema
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && prefersDark)) {
+        document.documentElement.classList.add('dark');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    } else {
+        document.documentElement.classList.remove('dark');
+        if (themeIcon) themeIcon.textContent = '🌙';
+    }
+
+    // 🌓 Cambiar tema
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                if (themeIcon) themeIcon.textContent = '🌙';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                if (themeIcon) themeIcon.textContent = '☀️';
+            }
+        });
+    }
+
+    // 🔔 Inicializar sistema de notificaciones
+    initializeNotificationSystem();
+
+    // 📤 Envío del formulario principal
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const userInput = input.value.trim();
+        if (userInput === "") return;
+
+        console.log('📤 Enviando comando:', userInput);
+
+        showLoading(true);
+        input.disabled = true;
+
+        // Ocultar guía inicial (El div 'guide-section' no existe, lo mantengo comentado)
+        /*
+        const guideSection = document.getElementById('guide-section');
+        if (guideSection && guideSection.style.display !== 'none') {
+            guideSection.style.display = 'none';
+        }
+        */
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ 'user_input': userInput })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📦 Respuesta recibida:', data);
+                
+                renderResult(data);
+
+                // Actualizar archivos si es necesario
+                if (data.tool === "save_code" || data.tool === "code_gen" || data.tool === "note") {
+                    setTimeout(fetchFiles, 500);
+                }
+
+                // Si es comando de notificaciones, actualizar estado
+                if (data.tool === "notifications") {
+                    setTimeout(() => {
+                        window.checkNotifications();
+                        window.updateNotificationStatus();
+                    }, 1000);
+                }
+                
+                // Disparar evento para que el JS en el HTML maneje el resultado RMN
+                if (data.tool === "rmn_spectrum_cleaner" && data.result_data && typeof data.result_data === 'object' && data.result_data.type === 'clean_result') {
+                     window.dispatchEvent(new CustomEvent('rmnCleanResult', { detail: data.result_data }));
+                }
+
+            } else {
+                const errorData = await response.json().catch(() => ({ detail: "Error desconocido" }));
+                renderError(errorData.detail || "Ocurrió un error inesperado.");
+            }
+
+        } catch (error) {
+            console.error("❌ Error en fetch:", error);
+            renderError("No se pudo conectar con el servidor.");
+        } finally {
+            showLoading(false);
+            input.disabled = false;
+            input.value = '';
+        }
+    });
+
     // 📋 Renderizar resultados
     function renderResult(data) {
+        // ... (Tu función renderResult se mantiene igual, ya que está correcta)
         let resultHtml = '';
 
         if (typeof data.result_data === 'string' && data.result_data.startsWith('OPEN_URL:')) {
@@ -283,8 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'list':
                 resultHtml = data.result_data.map(item => `
                     <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
-                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">${item.title}</a>
-                        <p class="text-sm mt-1 text-gray-600 dark:text-gray-400">${item.snippet}</p>
+                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline">${escapeHtml(item.title)}</a>
+                        <p class="text-sm mt-1 text-gray-600 dark:text-gray-400">${escapeHtml(item.snippet)}</p>
                     </div>
                 `).join('');
                 break;
@@ -302,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     resultHtml = `
                         <div class="p-4 bg-blue-50 dark:bg-blue-800 rounded-lg shadow-sm">
-                            <p class="text-blue-800 dark:text-blue-200 font-semibold">${data.result_data}</p>
+                            <p class="text-blue-800 dark:text-blue-200 font-semibold">${escapeHtml(data.result_data)}</p>
                             ${url ? `<button onclick="window.open('${url}', '_blank', 'noopener,noreferrer')" 
                                 class="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                                 🔗 Abrir ${url}
@@ -315,10 +356,10 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'download_file':
                 resultHtml = `
                     <div class="p-4 bg-green-50 dark:bg-green-800 rounded-lg shadow-sm">
-                        <p class="text-green-800 dark:text-green-200 font-semibold">${data.result_data}</p>
-                        <a href="${data.file_path}" download="${data.display_name}"
+                        <p class="text-green-800 dark:text-green-200 font-semibold">${escapeHtml(data.result_data)}</p>
+                        <a href="${data.file_path}" download="${escapeHtml(data.display_name)}"
                            class="mt-2 inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
-                            📁 Descargar ${data.display_name}
+                            📁 Descargar ${escapeHtml(data.display_name)}
                         </a>
                     </div>
                 `;
@@ -335,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="text-blue-600">🧠 Tú:</span> ${escapeHtml(data.input)}
             </div>
             <div class="mt-2 text-gray-600 dark:text-gray-400">
-                <span class="text-blue-600">🔧 Herramienta:</span> ${data.tool}
+                <span class="text-blue-600">🔧 Herramienta:</span> ${escapeHtml(data.tool)}
             </div>
             <div class="mt-4">
                 <span class="font-bold text-gray-800 dark:text-gray-200">📦 Resultado:</span>
@@ -346,6 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderError(message) {
+        // ... (Tu función renderError se mantiene igual)
         const entry = document.createElement('div');
         entry.className = 'entry p-4 bg-red-100 dark:bg-red-800 rounded-lg shadow-md';
         entry.innerHTML = `
@@ -357,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showLoading(show) {
+        // ... (Tu función showLoading se mantiene igual)
         if (loadingIndicator) {
             loadingIndicator.classList.toggle('hidden', !show);
         }
@@ -364,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 📁 Gestión de archivos
     async function fetchFiles() {
+        // ... (Tu función fetchFiles se mantiene igual)
         try {
             const response = await fetch('/files');
             const data = await response.json();
@@ -375,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateCodeFiles(files) {
+        // ... (Tu función updateCodeFiles se mantiene igual)
         if (!codeFilesList) return;
         
         codeFilesList.innerHTML = '';
@@ -420,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function viewFileContent(filename) {
+        // ... (Tu función viewFileContent se mantiene igual)
         try {
             const response = await fetch(`/view/code/${filename}`);
             if (response.ok) {
@@ -434,20 +480,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showFileModal(filename, content) {
+        // ... (Tu función showFileModal se mantiene igual)
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
 
         modal.innerHTML = `
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
                 <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📄 ${filename}</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📄 ${escapeHtml(filename)}</h3>
                     <button class="close-file-modal text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl">×</button>
                 </div>
                 <div class="flex-1 overflow-auto p-4">
                     <pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto"><code>${escapeHtml(content)}</code></pre>
                 </div>
                 <div class="flex justify-end space-x-2 p-4 border-t border-gray-200 dark:border-gray-700">
-                    <a href="/download/code/${filename}" download="${filename}" 
+                    <a href="/download/code/${encodeURIComponent(filename)}" download="${escapeHtml(filename)}" 
                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
                         ⬇️ Descargar
                     </a>
@@ -474,6 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateNotesInfo(notesExist, notesCount) {
+        // ... (Tu función updateNotesInfo se mantiene igual, las funciones de nota se exponen globalmente)
         const notesSection = document.getElementById('notes-section');
         if (!notesSection) return;
 
@@ -506,8 +554,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Funciones globales para notas
+    // Funciones globales para notas (Mantenidas y expuestas a window)
     window.viewAllNotes = async function() {
+        // ... (Tu función viewAllNotes se mantiene igual)
         try {
             const response = await fetch('/view/notes');
             if (response.ok) {
@@ -522,6 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showNotesModal(content, notesCount) {
+        // ... (Tu función showNotesModal se mantiene igual)
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50';
         
@@ -562,6 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.createNewNote = function() {
+        // ... (Tu función createNewNote se mantiene igual)
         const noteText = prompt("Escribe tu nota:");
         if (noteText && noteText.trim()) {
             input.value = `guardar: ${noteText.trim()}`;
@@ -570,7 +621,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Función para mostrar resultado de limpieza RMN
+    // Mantenida como interna, ya que el evento 'rmnCleanResult' la disparará desde el HTML.
     function showCleanResult(result) {
+        // ... (Tu función showCleanResult se mantiene igual)
         console.log("Result recibido:", result);
         
         const containerId = 'cleaned-spectra';
@@ -585,6 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 rmnSection.appendChild(container);
             }
         }
+        
+        // CORRECCIÓN: Eliminar el mensaje de 'no hay espectros limpios' si existe
+        const emptyMsg = container.querySelector('div.text-xs.italic');
+        if (emptyMsg) emptyMsg.remove();
+
 
         const cleanFileName = result.cleaned_file.split('/').pop();
         const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
@@ -612,15 +670,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="space-y-1">
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
-                        <span class="font-mono text-gray-800 dark:text-gray-200">${result.original_file}</span>
+                        <span class="font-mono text-gray-800 dark:text-gray-200">${escapeHtml(result.original_file)}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
-                        <span class="font-mono text-green-700 dark:text-green-300">${cleanFileName}</span>
+                        <span class="font-mono text-green-700 dark:text-green-300">${escapeHtml(cleanFileName)}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Método:</span>
-                        <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
+                        <span class="font-semibold text-blue-600 dark:text-blue-400">${escapeHtml(result.method)}</span>
                     </div>
                 </div>
                 <div class="space-y-1">
@@ -630,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Parámetros:</span>
-                        <span class="text-xs text-gray-700 dark:text-gray-300">${paramsStr}</span>
+                        <span class="text-xs text-gray-700 dark:text-gray-300">${escapeHtml(paramsStr)}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">Estado:</span>
@@ -661,18 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.prepend(entry);
     }
-
-    // 🔒 Escape para prevenir XSS
-    function escapeHtml(str) {
-        if (typeof str !== 'string') return str;
-        return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
+    
     // Solicitar permisos de notificación
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission().then(permission => {
