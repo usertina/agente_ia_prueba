@@ -40,7 +40,7 @@ def run(prompt: str) -> str:
         description = description[8:].strip()
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         
         # Prompt mejorado para generar código más específico
         enhanced_prompt = f"""
