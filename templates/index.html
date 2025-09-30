@@ -69,26 +69,38 @@
     <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300">
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
 
-        <div id="notifications-section">
-            <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">🔔 Notificaciones</h3>
-            <div class="space-y-2 mb-4">
-                <button onclick="configureNotifications()" 
-                         class="block w-full text-center p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors">
-                    ⚙️ Configurar
-                </button>
-                <button onclick="testNotifications()" 
-                         class="block w-full text-center p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors">
-                    🧪 Probar
-                </button>
-            </div>
-        </div>
-
-        <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-2">🔔 Notificaciones</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300" id="notification-status">Estado: Iniciando...</p>
-        </div>
-
-        <div class="mb-6">
+        <div id="notifications-section" class="mb-4">
+    <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">🔔 Notificaciones</h3>
+    
+    <div class="mb-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-1" id="notification-status">
+            Estado: Iniciando...
+        </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400" id="service-worker-status">
+            Service Worker: Verificando...
+        </p>
+    </div>
+    
+    <div class="space-y-2">
+        <button onclick="testNotifications()" 
+                class="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-sm">
+            🧪 Probar Notificaciones
+        </button>
+        <button onclick="configureNotifications()" 
+                class="w-full p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors text-sm">
+            ⚙️ Configurar
+        </button>
+        <button onclick="requestNotificationPermission()" 
+                class="w-full p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-sm">
+            🔔 Activar Permisos
+        </button>
+        <button onclick="debugNotifications()" 
+                class="w-full p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors text-sm">
+            🐛 Debug Sistema
+        </button>
+    </div>
+</div>
+          <div class="mb-6">
             <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-3">📁 Archivos Guardados</h3>
             
             <div class="mb-4">
@@ -168,6 +180,7 @@
 </div>
 
 <!-- Scripts - ORDEN IMPORTANTE -->
+<script src="/static/js/service-worker-registration.js"></script>
 <!-- 1. Helpers y utilidades -->
 <script src="/static/js/ui-helpers.js"></script>
 
