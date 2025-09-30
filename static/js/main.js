@@ -408,16 +408,35 @@ ${!userId ? '⚠️ Usuario no registrado - espera la inicialización\n' : ''}
     });
 
     // ============= RENDERIZADO =============
-    
-    function renderResult(data) {
-        let resultHtml = '';
-        if (typeof data.result_data === 'string' && data.result_data.startsWith('OPEN_URL:')) {
-            const url = data.result_data.replace('OPEN_URL:', '');
-            window.open(url, '_blank');
-            data.result_type = 'open_url';
-            data.url = url;
-        }
 
+function renderResult(data) {
+    let resultHtml = '';
+    
+    // Manejar OPEN_URL
+    if (typeof data.result_data === 'string' && data.result_data.startsWith('OPEN_URL:')) {
+        const url = data.result_data.replace('OPEN_URL:', '');
+        window.open(url, '_blank');
+        data.result_type = 'open_url';
+        data.url = url;
+    }
+
+    // NUEVO: Detectar respuestas de RMN Spectrum Cleaner
+    if (typeof data.result_data === 'object' && data.result_data !== null) {
+        // Respuesta de análisis de espectro
+        if (data.result_data.type === 'analysis_result') {
+            resultHtml = renderAnalysisResult(data.result_data);
+        }
+        // Respuesta de limpieza de espectro
+        else if (data.result_data.type === 'clean_result') {
+            resultHtml = renderCleanResult(data.result_data);
+        }
+        // Otro tipo de objeto
+        else {
+            resultHtml = `<pre class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg whitespace-pre-wrap">${JSON.stringify(data.result_data, null, 2)}</pre>`;
+        }
+    }
+    // Renderizado normal para otros tipos
+    else {
         switch (data.result_type) {
             case 'list':
                 resultHtml = data.result_data.map(item => `
@@ -434,17 +453,224 @@ ${!userId ? '⚠️ Usuario no registrado - espera la inicialización\n' : ''}
             default:
                 resultHtml = `<pre class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg whitespace-pre-wrap">${escapeHtml(data.result_data)}</pre>`;
         }
-
-        const entry = document.createElement('div');
-        entry.className = 'entry p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md';
-        entry.innerHTML = `
-            <div class="font-bold"><span class="text-blue-600">🧠 Tú:</span> ${escapeHtml(data.input)}</div>
-            <div class="mt-2"><span class="text-blue-600">🔧 Herramienta:</span> ${escapeHtml(data.tool)}</div>
-            <div class="mt-4"><span class="font-bold">📦 Resultado:</span><div class="mt-2">${resultHtml}</div></div>
-        `;
-        historyDiv.prepend(entry);
     }
 
+    const entry = document.createElement('div');
+    entry.className = 'entry p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md';
+    entry.innerHTML = `
+        <div class="font-bold"><span class="text-blue-600">🧠 Tú:</span> ${escapeHtml(data.input)}</div>
+        <div class="mt-2"><span class="text-blue-600">🔧 Herramienta:</span> ${escapeHtml(data.tool)}</div>
+        <div class="mt-4"><span class="font-bold">📦 Resultado:</span><div class="mt-2">${resultHtml}</div></div>
+    `;
+    historyDiv.prepend(entry);
+}
+
+// NUEVO: Renderizar resultado de análisis de espectro
+function renderAnalysisResult(data) {
+    const analysis = data.analysis;
+    const stats = data.statistics;
+    
+    let html = `
+        <div class="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900 dark:to-cyan-900 rounded-lg p-4 space-y-4">
+            <div class="flex items-center justify-between border-b border-teal-200 dark:border-teal-700 pb-3">
+                <h3 class="text-lg font-bold text-teal-800 dark:text-teal-200">
+                    🔍 Análisis: ${escapeHtml(data.filename)}
+                </h3>
+                <span class="px-3 py-1 bg-teal-600 text-white rounded-full text-xs font-semibold">
+                    ${data.success ? '✅ Completado' : '⚠️ Con errores'}
+                </span>
+            </div>
+            
+            <!-- Estadísticas Básicas -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Puntos de datos</div>
+                    <div class="text-2xl font-bold text-gray-800 dark:text-gray-200">${stats.data_points.toLocaleString()}</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Rango (ppm)</div>
+                    <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">${stats.frequency_range}</div>
+                </div>
+            </div>
+            
+            <!-- Análisis de Calidad -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-2">
+                <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">📊 Calidad del Espectro</h4>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">SNR (Señal/Ruido)</span>
+                    <span class="font-bold ${analysis.snr > 30 ? 'text-green-600' : analysis.snr > 20 ? 'text-yellow-600' : 'text-red-600'}">
+                        ${analysis.snr.toFixed(1)} dB
+                    </span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Nivel de ruido</span>
+                    <span class="font-mono text-xs">${analysis.noise_level.toFixed(4)}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Deriva línea base</span>
+                    <span class="font-mono text-xs">${analysis.baseline_drift.toFixed(4)}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Picos detectados</span>
+                    <span class="font-bold text-blue-600">${analysis.peak_count}</span>
+                </div>
+            </div>
+    `;
+    
+    // Gráfico si existe
+    if (data.plot_file) {
+        html += `
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">📈 Gráfico de Análisis</span>
+                    <a href="/download/plot/${data.plot_file}" download 
+                       class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                        ⬇️ Descargar
+                    </a>
+                </div>
+                <img src="/download/plot/${data.plot_file}" 
+                     alt="Análisis del espectro" 
+                     class="w-full rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
+                     onclick="window.open('/download/plot/${data.plot_file}', '_blank')">
+            </div>
+        `;
+    }
+    
+    // Recomendaciones
+    if (data.recommendations && data.recommendations.length > 0) {
+        html += `
+            <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">💡 Recomendaciones</h4>
+                <ul class="space-y-1 text-sm text-blue-700 dark:text-blue-300">
+        `;
+        
+        data.recommendations.forEach(rec => {
+            html += `<li>• ${escapeHtml(rec)}</li>`;
+        });
+        
+        html += `
+                </ul>
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+
+// NUEVO: Renderizar resultado de limpieza de espectro
+function renderCleanResult(data) {
+    const improvement = data.snr_improvement;
+    const improvementColor = improvement > 5 ? 'green' : improvement > 2 ? 'yellow' : 'orange';
+    
+    let html = `
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 rounded-lg p-4 space-y-4">
+            <div class="flex items-center justify-between border-b border-green-200 dark:border-green-700 pb-3">
+                <h3 class="text-lg font-bold text-green-800 dark:text-green-200">
+                    ✨ Limpieza Completada
+                </h3>
+                <span class="px-3 py-1 bg-green-600 text-white rounded-full text-xs font-semibold">
+                    ${data.success ? '✅ Exitoso' : '⚠️ Con advertencias'}
+                </span>
+            </div>
+            
+            <!-- Información de archivos -->
+            <div class="space-y-2">
+                <div class="flex items-start space-x-2">
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">📄 Original:</span>
+                    <span class="font-mono text-xs text-gray-800 dark:text-gray-200">${escapeHtml(data.original_file)}</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span class="text-green-600 dark:text-green-400 text-sm">✨ Limpio:</span>
+                    <div class="flex-1">
+                        <span class="font-mono text-xs text-gray-800 dark:text-gray-200">${escapeHtml(data.cleaned_file)}</span>
+                        <a href="${data.download_urls.cleaned}" download 
+                           class="ml-2 text-xs text-blue-600 hover:text-blue-800">
+                            ⬇️ Descargar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Método usado -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">🔧 Método de limpieza</div>
+                <div class="font-semibold text-gray-800 dark:text-gray-200">${escapeHtml(data.method)}</div>
+                ${data.params && Object.keys(data.params).length > 0 ? `
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Parámetros: ${JSON.stringify(data.params)}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <!-- Mejoras -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">SNR Original</div>
+                    <div class="text-xl font-bold text-gray-600 dark:text-gray-400">${data.snr_original.toFixed(1)}</div>
+                    <div class="text-xs text-gray-500">dB</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Mejora</div>
+                    <div class="text-xl font-bold text-${improvementColor}-600">+${improvement.toFixed(1)}</div>
+                    <div class="text-xs text-gray-500">dB</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">SNR Final</div>
+                    <div class="text-xl font-bold text-green-600">${data.snr_clean.toFixed(1)}</div>
+                    <div class="text-xs text-gray-500">dB</div>
+                </div>
+            </div>
+            
+            <!-- Estadísticas adicionales -->
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Puntos de datos:</span>
+                    <span class="font-semibold">${data.data_points.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Tiempo proceso:</span>
+                    <span class="font-semibold">${data.processing_time} ms</span>
+                </div>
+            </div>
+    `;
+    
+    // Gráfico de comparación si existe
+    if (data.plot_file && data.download_urls.plot) {
+        html += `
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">📊 Comparación Antes/Después</span>
+                    <a href="${data.download_urls.plot}" download 
+                       class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        ⬇️ Descargar
+                    </a>
+                </div>
+                <img src="${data.download_urls.plot}" 
+                     alt="Comparación del espectro" 
+                     class="w-full rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
+                     onclick="window.open('${data.download_urls.plot}', '_blank')">
+            </div>
+        `;
+    }
+    
+    // Mensaje
+    if (data.message) {
+        html += `
+            <div class="bg-green-50 dark:bg-green-900 rounded-lg p-3">
+                <p class="text-sm text-green-700 dark:text-green-300">${escapeHtml(data.message)}</p>
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+   
     // ============= INICIALIZACIÓN =============
     
     // Inicializar sistema de notificaciones
