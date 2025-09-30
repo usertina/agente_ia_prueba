@@ -101,9 +101,9 @@ function initializeRMNSection() {
     console.log('✅ Sección RMN inicializada');
 }
 
-// ========== FUNCIONES DE TOGGLE Y NAVEGACIÓN ==========
+// ========== FUNCIONES DE TOGGLE Y NAVEGACIÓN (WINDOW) ==========
 
-function toggleRMNSection() {
+window.toggleRMNSection = function() {
     const section = document.getElementById('rmn-section');
     const toggle = document.getElementById('rmn-toggle');
     
@@ -121,52 +121,52 @@ function toggleRMNSection() {
         section.classList.add('hidden');
         if (toggle) toggle.innerHTML = '🧪 Espectros RMN ▶';
     }
-}
+};
 
-function showRMNHelp() {
+window.showRMNHelp = function() {
     executeRMNCommand('ayuda rmn');
-}
+};
 
-function showRMNMethods() {
+window.showRMNMethods = function() {
     executeRMNCommand('métodos');
-}
+};
 
-function listSpectra() {
+window.listSpectra = function() {
     executeRMNCommand('listar espectros');
-}
+};
 
-function executeRMNCommand(command) {
+window.executeRMNCommand = function(command) {
     const input = document.getElementById('user_input');
     const form = document.getElementById('commandForm');
     input.value = command;
     form.dispatchEvent(new Event('submit'));
-}
+};
 
 // ========== FUNCIONES DE LIMPIEZA RÁPIDA ==========
 
-function quickCleanAuto() {
+window.quickCleanAuto = function() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
     executeRMNCommand(`limpiar auto: ${lastSpectrum}`);
-}
+};
 
-function quickCleanSavgol() {
+window.quickCleanSavgol = function() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
     executeRMNCommand(`limpiar: ${lastSpectrum} con savgol`);
-}
+};
 
-function quickCleanGaussian() {
+window.quickCleanGaussian = function() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
     executeRMNCommand(`limpiar: ${lastSpectrum} con gaussian`);
-}
+};
 
-function quickCleanMedian() {
+window.quickCleanMedian = function() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
     executeRMNCommand(`limpiar: ${lastSpectrum} con median`);
-}
+};
 
 // ========== FUNCIONES DE UPLOAD ==========
 
-async function uploadSpectrum() {
+window.uploadSpectrum = async function() {
     const fileInput = document.getElementById('spectrum-file-input');
     const file = fileInput.files[0];
     
@@ -194,6 +194,7 @@ async function uploadSpectrum() {
 
         const result = await response.json();
         
+        
         if (result.success) {
             alert(`✅ ${result.message}\n💡 ${result.next_step}`);
             localStorage.setItem('lastSpectrum', result.filename);
@@ -206,7 +207,7 @@ async function uploadSpectrum() {
     } catch (error) {
         alert(`❌ Error subiendo espectro: ${error.message}`);
     }
-}
+};
 
 // ========== FUNCIONES DE CARGA DE DATOS ==========
 
@@ -266,14 +267,12 @@ async function loadRMNStats() {
     }
 }
 
-// ========== FUNCIONES DE ANÁLISIS Y DESCARGA ==========
-
-function analyzeSpectrum(filename) {
+window.analyzeSpectrum = function(filename) {
     localStorage.setItem('lastSpectrum', filename);
     executeRMNCommand(`analizar: ${filename}`);
-}
+};
 
-async function downloadSpectrum(filename) {
+window.downloadSpectrum = async function(filename) {
     try {
         const response = await fetch(`/download/spectrum/${filename}`);
         if (response.ok) {
@@ -292,170 +291,9 @@ async function downloadSpectrum(filename) {
     } catch (error) {
         alert(`Error: ${error.message}`);
     }
-}
+};
 
-// ========== FUNCIONES DE VISUALIZACIÓN DE RESULTADOS ==========
-
-function showCleanResult(result) {
-    const containerId = 'cleaned-spectra';
-    let container = document.getElementById(containerId);
-
-    if (!container) {
-        container = document.createElement('div');
-        container.id = containerId;
-        container.className = 'mt-4 space-y-4';
-        const rmnSection = document.getElementById('rmn-section');
-        rmnSection.appendChild(container);
-    }
-
-    const emptyMsg = container.querySelector('div.text-xs.italic');
-    if (emptyMsg) emptyMsg.remove();
-
-    const cleanFileName = result.cleaned_file.split('/').pop();
-    const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
-    const paramsStr = result.params ? 
-        Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
-        'Parámetros automáticos';
-
-    const entry = document.createElement('div');
-    entry.className = 'p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500';
-    entry.innerHTML = `
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center space-x-3">
-                <div class="text-2xl">🧪</div>
-                <div>
-                    <div class="text-green-800 dark:text-green-200 font-bold text-lg">ESPECTRO LIMPIADO</div>
-                    <div class="text-xs text-green-600 dark:text-green-400">
-                        ${new Date().toLocaleString('es-ES')}
-                    </div>
-                </div>
-            </div>
-            <div class="flex space-x-1">
-                <button onclick="analyzeCleanSpectrum('${cleanFileName}')" 
-                        class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
-                    🔍 Analizar
-                </button>
-                <button onclick="compareWithOriginal('${result.original_file}', '${cleanFileName}')" 
-                        class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs">
-                    📊 Comparar
-                </button>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-            <div class="space-y-1">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
-                    <span class="font-mono text-gray-800 dark:text-gray-200">${result.original_file}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
-                    <span class="font-mono text-green-700 dark:text-green-300">${cleanFileName}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Método:</span>
-                    <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
-                </div>
-            </div>
-            <div class="space-y-1">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Mejora SNR:</span>
-                    <span class="font-semibold text-green-600 dark:text-green-400">+${result.snr_improvement || '0'} dB</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Parámetros:</span>
-                    <span class="text-xs text-gray-700 dark:text-gray-300">${paramsStr}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Estado:</span>
-                    <span class="text-green-600 dark:text-green-400 font-semibold">✅ Listo</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
-            <a href="/download/cleaned/${encodeURIComponent(cleanFileName)}" download
-               class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                📥 Descargar CSV Limpio
-            </a>
-            
-            ${result.plot_file ? `
-            <a href="/download/plot/${encodeURIComponent(plotFileName)}" download
-               class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-                📊 Descargar Gráfico
-            </a>
-            ` : ''}
-
-            <button onclick="exportSpectrum('${cleanFileName}', 'json')" 
-                    class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
-                📁 Exportar JSON
-            </button>
-
-            <button onclick="showSpectrumDetails('${cleanFileName}')" 
-                    class="flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
-                ℹ️ Detalles
-            </button>
-        </div>
-
-        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
-            <span>💡 Haz clic en "Analizar" para ver estadísticas detalladas</span>
-            <span>🕒 Procesado en ${result.processing_time || '0'}s</span>
-        </div>
-    `;
-
-    container.prepend(entry);
-    loadRMNStats();
-    showNotification('success', `Espectro limpiado: ${cleanFileName}`, 'El archivo está listo para descargar');
-}
-
-function analyzeCleanSpectrum(filename) {
-    executeRMNCommand(`analizar: ${filename}`);
-}
-
-function compareWithOriginal(originalFile, cleanFile) {
-    executeRMNCommand(`comparar: ${originalFile} con ${cleanFile}`);
-}
-
-function exportSpectrum(filename, format) {
-    executeRMNCommand(`exportar: ${filename} formato ${format}`);
-}
-
-function showSpectrumDetails(filename) {
-    executeRMNCommand(`detalles: ${filename}`);
-}
-
-// ========== SISTEMA DE NOTIFICACIONES ==========
-
-function showNotification(type, title, message) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ${
-        type === 'success' ? 'bg-green-500' : 
-        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-    } text-white`;
-    
-    notification.innerHTML = `
-        <div class="flex items-center space-x-3">
-            <span class="text-xl">${type === 'success' ? '✅' : type === 'error' ? '❌' : '💡'}</span>
-            <div>
-                <div class="font-semibold">${title}</div>
-                <div class="text-sm opacity-90">${message}</div>
-            </div>
-            <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200">
-                ×
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 5000);
-}
-
-// ========== INICIALIZACIÓN AL CARGAR LA PÁGINA ==========
+// ========== INICIALIZACIÓN ==========
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeRMNSection();
