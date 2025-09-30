@@ -150,6 +150,13 @@ class CommandHandler:
             result = use_tool(tool, user_input)
             return {"tool": tool, "result": result}
 
+# ============= SW =============
+
+    @app.get("/sw.js")
+    async def service_worker():
+        """Sirve el Service Worker desde la raíz para que se registre correctamente"""
+        return FileResponse("static/sw.js", media_type="application/javascript")
+
 # ============= GESTORES DE ARCHIVOS =============
 
 class FileManager:
