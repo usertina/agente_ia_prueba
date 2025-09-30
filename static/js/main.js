@@ -1,5 +1,5 @@
 import { initFormHandler } from "/static/js/form-handler.js";
-import { initializeNotificationSystem } from "/static/js/notifications.js";
+
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Inicializando aplicación...');
