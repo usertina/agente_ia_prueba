@@ -7,9 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar formulario
     initFormHandler();
 
-    // Inicializar sistema de notificaciones
-    initializeNotificationSystem();
-
     // Cargar archivos si existe la función
     if (window.fetchFiles) window.fetchFiles();
 
