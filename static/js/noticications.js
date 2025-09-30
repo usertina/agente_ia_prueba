@@ -1,6 +1,7 @@
 // ====================== NOTIFICACIONES ======================
 
-export async function requestNotificationPermission() {
+// Solicita permisos de notificación
+async function requestNotificationPermission() {
     if (!('Notification' in window)) {
         console.warn('⚠️ Este navegador no soporta notificaciones');
         return false;
@@ -34,7 +35,8 @@ export async function requestNotificationPermission() {
     }
 }
 
-export function showNotificationWarning() {
+// Muestra aviso de notificaciones bloqueadas
+function showNotificationWarning() {
     const warning = document.createElement('div');
     warning.className = 'fixed top-4 right-4 bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 p-4 rounded-lg shadow-lg z-50 max-w-md';
     warning.innerHTML = `
@@ -65,7 +67,8 @@ export function showNotificationWarning() {
     }, 10000);
 }
 
-export function getNotificationIcon(type) {
+// Iconos para diferentes tipos de notificación
+function getNotificationIcon(type) {
     const icons = { 
         'email': '📧', 
         'patent': '🔬', 
@@ -76,7 +79,8 @@ export function getNotificationIcon(type) {
     return icons[type] || '🔔';
 }
 
-export function updateNotificationStatus(userId = null) {
+// Actualiza estado en el panel
+function updateNotificationStatus(userId = null) {
     const statusEl = document.getElementById('notification-status');
     if (statusEl) {
         if (userId) {
@@ -88,7 +92,8 @@ export function updateNotificationStatus(userId = null) {
     }
 }
 
-export async function initializeNotificationSystem() {
+// Inicializa el sistema de notificaciones
+async function initializeNotificationSystem() {
     try {
         if (window.registerServiceWorker) {
             await window.registerServiceWorker();
@@ -122,3 +127,28 @@ export async function initializeNotificationSystem() {
         setTimeout(initializeNotificationSystem, 5000);
     }
 }
+
+// Funciones de prueba/debug
+function debugNotifications() {
+    console.log('🔧 Debug notificaciones activado');
+}
+
+function testNotifications() {
+    console.log('🧪 Probando notificaciones...');
+}
+
+function configureNotifications() {
+    console.log('⚙️ Configuración de notificaciones...');
+}
+
+// ===== Exportar funciones globales para HTML =====
+window.requestNotificationPermission = requestNotificationPermission;
+window.initializeNotificationSystem = initializeNotificationSystem;
+window.debugNotifications = debugNotifications;
+window.testNotifications = testNotifications;
+window.configureNotifications = configureNotifications;
+window.updateNotificationStatus = updateNotificationStatus;
+window.getNotificationIcon = getNotificationIcon;
+window.showNotificationWarning = showNotificationWarning;
+
+console.log('🔔 Módulo de notificaciones cargado');
