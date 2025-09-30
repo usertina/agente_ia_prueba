@@ -12,27 +12,97 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+// ========== INICIALIZACIÓN DE LA SECCIÓN DE AYUDAS ==========
 
-/**
- * Alterna la visibilidad de la sección de ayudas
- */
+function initializeAyudasSection() {
+    const ayudasSection = document.getElementById('ayudas-section');
+    if (!ayudasSection) {
+        console.error('❌ Sección Ayudas no encontrada');
+        return;
+    }
+
+    ayudasSection.innerHTML = `
+        <!-- Estadísticas de Ayudas -->
+        <div id="ayudas-stats" class="p-3 bg-green-50 dark:bg-green-900 rounded-lg text-sm mb-3">
+            <strong>📊 Estado Ayudas</strong><br>
+            <span class="text-sm">Sistema de monitoreo activo - 5 fuentes configuradas</span>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="space-y-2 mb-3">
+            <button onclick="searchAyudas()" 
+                    class="w-full text-left p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+                🔍 Buscar Ayudas
+            </button>
+            <button onclick="configureAyudasRegion()" 
+                    class="w-full text-left p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+                🗺️ Configurar Región
+            </button>
+            <button onclick="activateAyudasNotifications()" 
+                    class="w-full text-left p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
+                🔔 Activar Notificaciones
+            </button>
+            <button onclick="testAyudasSystem()" 
+                    class="w-full text-left p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm">
+                🧪 Probar Sistema
+            </button>
+        </div>
+
+        <!-- Filtros rápidos -->
+        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">⚡ Filtros Rápidos</h4>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="filterAyudas('tecnología')" 
+                        class="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+                    💻 Tecnología
+                </button>
+                <button onclick="filterAyudas('innovación')" 
+                        class="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs">
+                    💡 Innovación
+                </button>
+                <button onclick="filterAyudas('sostenibilidad')" 
+                        class="p-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
+                    🌱 Sostenible
+                </button>
+                <button onclick="filterAyudas('empleo')" 
+                        class="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs">
+                    👔 Empleo
+                </button>
+            </div>
+        </div>
+
+        <!-- Lista de ayudas recientes -->
+        <div id="ayudas-list" class="mb-3">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📋 Ayudas Recientes</h4>
+            <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
+                Busca para ver ayudas disponibles
+            </div>
+        </div>
+    `;
+
+    console.log('✅ Sección Ayudas inicializada');
+}
+
+// ========== FUNCIONES DE TOGGLE Y ACCIONES ==========
+
 window.toggleAyudasSection = function() {
     const section = document.getElementById('ayudas-section');
     const toggle = document.getElementById('ayudas-toggle');
     
+    if (!section) {
+        console.error('❌ Sección Ayudas no encontrada');
+        return;
+    }
+    
     if (section.classList.contains('hidden')) {
         section.classList.remove('hidden');
-        toggle.innerHTML = '💶 Ayudas y Subvenciones ▼';
-        loadAyudasStats();
+        if (toggle) toggle.innerHTML = '💶 Ayudas y Subvenciones ▼';
     } else {
         section.classList.add('hidden');
-        toggle.innerHTML = '💶 Ayudas y Subvenciones ▶';
+        if (toggle) toggle.innerHTML = '💶 Ayudas y Subvenciones ▶';
     }
 };
 
-/**
- * Busca ayudas actuales
- */
 window.searchAyudas = function() {
     const input = document.getElementById('user_input');
     const form = document.getElementById('commandForm');
@@ -40,9 +110,6 @@ window.searchAyudas = function() {
     form.dispatchEvent(new Event('submit'));
 };
 
-/**
- * Filtra ayudas por tipo
- */
 window.filterAyudas = function(tipo) {
     const input = document.getElementById('user_input');
     const form = document.getElementById('commandForm');
@@ -50,9 +117,6 @@ window.filterAyudas = function(tipo) {
     form.dispatchEvent(new Event('submit'));
 };
 
-/**
- * Configura la región para las ayudas
- */
 window.configureAyudasRegion = function() {
     const regions = ['euskadi', 'gipuzkoa', 'bizkaia', 'araba', 'nacional', 'todas'];
     const region = prompt(`Selecciona tu región:\n${regions.join(', ')}`);
@@ -65,9 +129,6 @@ window.configureAyudasRegion = function() {
     }
 };
 
-/**
- * Activa las notificaciones de ayudas
- */
 window.activateAyudasNotifications = function() {
     const input = document.getElementById('user_input');
     const form = document.getElementById('commandForm');
@@ -75,9 +136,6 @@ window.activateAyudasNotifications = function() {
     form.dispatchEvent(new Event('submit'));
 };
 
-/**
- * Prueba el sistema de ayudas
- */
 window.testAyudasSystem = function() {
     const input = document.getElementById('user_input');
     const form = document.getElementById('commandForm');
@@ -85,88 +143,10 @@ window.testAyudasSystem = function() {
     form.dispatchEvent(new Event('submit'));
 };
 
-/**
- * Carga las estadísticas de ayudas
- */
-async function loadAyudasStats() {
-    const statsEl = document.getElementById('ayudas-stats');
-    if (statsEl) {
-        statsEl.textContent = 'Sistema de monitoreo activo - 5 fuentes configuradas';
-    }
-}
+// ========== INICIALIZACIÓN ==========
 
-/**
- * Muestra notificación de ayuda en el navegador
- */
-function showAyudaNotification(ayuda) {
-    // Notificación del navegador
-    if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification(ayuda.title, {
-            body: ayuda.message,
-            icon: '💶',
-            tag: `ayuda_${ayuda.data.id}`,
-            data: ayuda.data
-        });
-        
-        notification.onclick = function() {
-            window.open(ayuda.data.url, '_blank');
-            notification.close();
-        };
-    }
-    
-    // Actualizar lista de ayudas en el panel
-    updateAyudasList(ayuda);
-}
-
-/**
- * Actualiza la lista de ayudas en el panel
- */
-function updateAyudasList(ayuda) {
-    const listEl = document.getElementById('ayudas-list');
-    if (!listEl) return;
-    
-    const ayudaEl = document.createElement('div');
-    ayudaEl.className = 'p-2 bg-green-50 dark:bg-green-800 rounded text-xs cursor-pointer hover:bg-green-100 dark:hover:bg-green-700';
-    ayudaEl.innerHTML = `
-        <div class="font-semibold text-green-800 dark:text-green-200">${escapeHtml(ayuda.title)}</div>
-        <div class="text-green-600 dark:text-green-300">${escapeHtml(ayuda.message)}</div>
-        <div class="text-xs text-green-500 dark:text-green-400 mt-1">
-            ${ayuda.data.fecha_limite ? `Límite: ${ayuda.data.fecha_limite}` : 'Sin fecha límite'}
-        </div>
-    `;
-    ayudaEl.onclick = () => window.open(ayuda.data.url, '_blank');
-    
-    // Insertar al principio de la lista
-    listEl.insertBefore(ayudaEl, listEl.firstChild);
-    
-    // Limitar a 10 elementos
-    while (listEl.children.length > 10) {
-        listEl.removeChild(listEl.lastChild);
-    }
-}
-
-/**
- * Función auxiliar para escapar HTML
- */
-function escapeHtml(str) {
-    if (typeof str !== 'string') return str;
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// Escuchar eventos de ayudas
-window.addEventListener('ayudasNotification', function(event) {
-    if (event.detail) {
-        showAyudaNotification(event.detail);
-    }
-});
-
-// Inicializar al cargar
 document.addEventListener('DOMContentLoaded', function() {
+    initializeAyudasSection();
     console.log('💶 Módulo de ayudas inicializado');
 });
 

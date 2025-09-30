@@ -1,3 +1,80 @@
+// ========== INICIALIZACIÓN DE LA SECCIÓN DE DOCUMENTOS ==========
+
+function initializeDocumentSection() {
+    const docSection = document.getElementById('document-section');
+    if (!docSection) {
+        console.error('❌ Sección Documentos no encontrada');
+        return;
+    }
+
+    docSection.innerHTML = `
+        <!-- Estadísticas -->
+        <div id="document-stats" class="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg text-sm mb-3">
+            <strong>📊 Estado Documentos</strong><br>
+            <span class="text-sm">Plantillas: 0 | Datos: 0 | Generados: 0</span>
+        </div>
+
+        <!-- Botones de ayuda -->
+        <div class="space-y-2 mb-3">
+            <button onclick="showDocumentHelp()" 
+                    class="w-full text-left p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+                ❓ Ayuda Documentos
+            </button>
+            <button onclick="listTemplates()" 
+                    class="w-full text-left p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+                📋 Listar Plantillas
+            </button>
+            <button onclick="listDataFiles()" 
+                    class="w-full text-left p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
+                📊 Listar Datos
+            </button>
+        </div>
+
+        <!-- Upload plantilla -->
+        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📤 Subir Plantilla</h4>
+            <input type="file" id="template-file-input" accept=".docx,.txt,.pdf" class="hidden">
+            <button onclick="document.getElementById('template-file-input').click()" 
+                    class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm mb-2">
+                📁 Seleccionar Plantilla
+            </button>
+            <button onclick="uploadTemplate()" 
+                    class="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm">
+                ⬆️ Subir Plantilla
+            </button>
+        </div>
+
+        <!-- Upload datos -->
+        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📤 Subir Datos</h4>
+            <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.txt" class="hidden">
+            <button onclick="document.getElementById('data-file-input').click()" 
+                    class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm mb-2">
+                📁 Seleccionar Datos
+            </button>
+            <button onclick="uploadDataFile()" 
+                    class="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm">
+                ⬆️ Subir Datos
+            </button>
+        </div>
+
+        <!-- Listas -->
+        <div id="templates-list" class="mb-2"></div>
+        <div id="data-files-list" class="mb-2"></div>
+        <div id="output-files-list"></div>
+    `;
+
+    console.log('✅ Sección Documentos inicializada');
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDocumentSection();
+    if (document.getElementById('document-section')) {
+        console.log('📄 Sistema de documentos inicializado');
+    }
+});
+
 // ========== FUNCIONES DE GESTIÓN DE DOCUMENTOS ==========
 
 // Variables que necesita document.js
