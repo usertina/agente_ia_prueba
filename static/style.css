@@ -230,6 +230,66 @@ body.dark-mode .entry pre {
 }
 
 /* Mejoras para modo oscuro */
-.dark .notification-clickable:hover {
+body.dark-mode .notification-clickable:hover {
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ========== ESTILOS PARA HISTORIAL DE NOTIFICACIONES ========== */
+.notification-item {
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    transform: translateY(-2px);
+}
+
+.notification-item.unread {
+    border-left-width: 4px;
+}
+
+.filter-button {
+    transition: all 0.2s ease;
+}
+
+.filter-button.active {
+    transform: scale(1.05);
+}
+
+/* Animación para nuevas notificaciones */
+@keyframes notification-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.notification-item.new {
+    animation: notification-pop 0.3s ease-out;
+}
+
+/* Line clamp para textos largos */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Vendor */
+    line-clamp: 2;         /* Estándar */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Badge animado */
+#notification-badge {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: .5;
+    }
 }

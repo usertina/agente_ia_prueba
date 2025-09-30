@@ -728,6 +728,152 @@ async def send_test_notification(request: Request, user_id: str):
             "success": False,
             "message": f"Error: {str(e)}"
         }, status_code=500)
+    
+# ============= NUEVOS ENDPOINTS PARA HISTORIAL DE NOTIFICACIONES =============
+
+@app.get("/notifications/user/{user_id}/history")
+async def get_notification_history(request: Request, user_id: str):
+    """Obtiene el historial completo de notificaciones de un usuario"""
+    try:
+        current_user_id = Utils.get_current_user_id(request)
+        if current_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Acceso denegado")
+        
+        # Obtener todas las notificaciones (últimas 50)
+        notifications = multi_user_system.get_all_notifications(user_id, limit=50, include_delivered=True)
+        
+        # Contar no leídas (asumiendo que delivered=False significa no leída)
+        unread_count = len([n for n in notifications if not n.get('delivered', True)])
+        
+        return JSONResponse({
+            "success": True,
+            "notifications": notifications,
+            "total": len(notifications),
+            "unread_count": unread_count
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error obteniendo historial: {e}")
+        return JSONResponse({
+            "success": False,
+            "notifications": [],
+            "total": 0,
+            "unread_count": 0,
+            "error": str(e)
+        })
+
+@app.post("/notifications/mark-read/{notification_id}")
+async def mark_notification_read(request: Request, notification_id: int):
+    """Marca una notificación como leída"""
+    try:
+        body = await request.json()
+        user_id = body.get('user_id')
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id requerido")
+        
+        current_user_id = Utils.get_current_user_id(request)
+        if current_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Acceso denegado")
+        
+        # Marcar como entregada/leída en la base de datos
+        with multi_user_system.get_db_connection() as conn:
+            # Verificar que la notificación pertenece al usuario
+            notif = conn.execute(
+                "SELECT id FROM notifications WHERE id = ? AND user_id = ?",
+                (notification_id, user_id)
+            ).fetchone()
+            
+            if not notif:
+                raise HTTPException(status_code=404, detail="Notificación no encontrada")
+            
+            # Marcar como leída
+            conn.execute(
+                "UPDATE notifications SET delivered = TRUE WHERE id = ?",
+                (notification_id,)
+            )
+            conn.commit()
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Notificación marcada como leída"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error marcando como leída: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/notifications/mark-all-read")
+async def mark_all_notifications_read(request: Request):
+    """Marca todas las notificaciones de un usuario como leídas"""
+    try:
+        body = await request.json()
+        user_id = body.get('user_id')
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id requerido")
+        
+        current_user_id = Utils.get_current_user_id(request)
+        if current_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Acceso denegado")
+        
+        with multi_user_system.get_db_connection() as conn:
+            result = conn.execute(
+                "UPDATE notifications SET delivered = TRUE WHERE user_id = ? AND delivered = FALSE",
+                (user_id,)
+            )
+            conn.commit()
+            count = result.rowcount
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"{count} notificaciones marcadas como leídas"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error marcando todas como leídas: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@app.post("/notifications/clear-history")
+async def clear_notification_history(request: Request):
+    """Limpia el historial de notificaciones de un usuario"""
+    try:
+        body = await request.json()
+        user_id = body.get('user_id')
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id requerido")
+        
+        current_user_id = Utils.get_current_user_id(request)
+        if current_user_id != user_id:
+            raise HTTPException(status_code=403, detail="Acceso denegado")
+        
+        count = multi_user_system.delete_all_notifications(user_id)
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"{count} notificaciones eliminadas"
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error limpiando historial: {e}")
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
 # ============= ENDPOINTS AUXILIARES =============
 

@@ -8,25 +8,6 @@
     <script>
         tailwind.config = { darkMode: 'class' }
     </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
-        .entry { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .tab-button.active {
-            background-color: var(--tw-color-blue-100, #DBEAFE);
-            color: var(--tw-color-blue-800, #1E40AF);
-        }
-        .dark .tab-button.active {
-            background-color: var(--tw-color-blue-700, #1D4ED8);
-            color: var(--tw-color-blue-200, #BFDBFE);
-        }
-    </style>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
@@ -66,41 +47,50 @@
         </div>
     </div>
 
-    <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300">
+    <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300 overflow-y-auto scrollbar-hide">
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
 
+        <!-- SECCIÓN DE NOTIFICACIONES MEJORADA -->
         <div id="notifications-section" class="mb-4">
-    <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">🔔 Notificaciones</h3>
-    
-    <div class="mb-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-1" id="notification-status">
-            Estado: Iniciando...
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400" id="service-worker-status">
-            Service Worker: Verificando...
-        </p>
-    </div>
-    
-    <div class="space-y-2">
-        <button onclick="testNotifications()" 
-                class="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-sm">
-            🧪 Probar Notificaciones
-        </button>
-        <button onclick="configureNotifications()" 
-                class="w-full p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors text-sm">
-            ⚙️ Configurar
-        </button>
-        <button onclick="requestNotificationPermission()" 
-                class="w-full p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-sm">
-            🔔 Activar Permisos
-        </button>
-        <button onclick="debugNotifications()" 
-                class="w-full p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors text-sm">
-            🐛 Debug Sistema
-        </button>
-    </div>
-</div>
-          <div class="mb-6">
+            <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                <span>🔔 Notificaciones</span>
+                <span id="notification-badge" class="hidden bg-red-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+            </h3>
+            
+            <div class="mb-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-1" id="notification-status">
+                    Estado: Iniciando...
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400" id="service-worker-status">
+                    Service Worker: Verificando...
+                </p>
+            </div>
+            
+            <div class="space-y-2">
+                <button onclick="testNotifications()" 
+                        class="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    🧪 Probar Notificaciones
+                </button>
+                <button onclick="configureNotifications()" 
+                        class="w-full p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    ⚙️ Configurar
+                </button>
+                <button onclick="requestNotificationPermission()" 
+                        class="w-full p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    🔔 Activar Permisos
+                </button>
+                <button onclick="toggleNotificationHistory()" 
+                        class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    📋 Ver Historial
+                </button>
+                <button onclick="debugNotifications()" 
+                        class="w-full p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors text-sm">
+                    🐛 Debug Sistema
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-6">
             <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-3">📁 Archivos Guardados</h3>
             
             <div class="mb-4">
@@ -179,8 +169,90 @@
     </div>
 </div>
 
+<!-- MODAL DE HISTORIAL DE NOTIFICACIONES -->
+<div id="notification-history-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="fixed inset-0 bg-black opacity-50" onclick="toggleNotificationHistory()"></div>
+        
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            📋 Historial de Notificaciones
+                        </h2>
+                        <span id="history-badge" class="ml-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                    </div>
+                    <button onclick="toggleNotificationHistory()" 
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Filtros -->
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button onclick="filterNotifications('all')" 
+                            class="filter-button active bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors" 
+                            data-filter="all">
+                        Todas
+                    </button>
+                    <button onclick="filterNotifications('papers')" 
+                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
+                            data-filter="papers">
+                        📚 Papers
+                    </button>
+                    <button onclick="filterNotifications('patents')" 
+                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
+                            data-filter="patents">
+                        🔬 Patentes
+                    </button>
+                    <button onclick="filterNotifications('emails')" 
+                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
+                            data-filter="emails">
+                        📧 Emails
+                    </button>
+                    <button onclick="filterNotifications('ayudas')" 
+                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
+                            data-filter="ayudas">
+                        💶 Ayudas
+                    </button>
+                    <button onclick="filterNotifications('test')" 
+                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
+                            data-filter="test">
+                        🧪 Test
+                    </button>
+                </div>
+                
+                <!-- Acciones -->
+                <div class="mt-3 flex gap-2">
+                    <button onclick="markAllAsRead()" 
+                            class="text-xs px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors">
+                        ✅ Marcar todas como leídas
+                    </button>
+                    <button onclick="clearNotificationHistory()" 
+                            class="text-xs px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition-colors">
+                        🗑️ Limpiar historial
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Lista de notificaciones -->
+            <div id="notification-history" class="flex-1 overflow-y-auto p-4">
+                <div class="text-center p-8 text-gray-500 dark:text-gray-400">
+                    <p class="text-lg">📭</p>
+                    <p class="mt-2">Cargando notificaciones...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Scripts - ORDEN IMPORTANTE -->
 <script src="/static/js/service-worker-registration.js"></script>
+
 <!-- 1. Helpers y utilidades -->
 <script src="/static/js/ui-helpers.js"></script>
 
@@ -194,10 +266,40 @@
 <script src="/static/js/rmn.js"></script>
 <script src="/static/js/document.js"></script>
 
-
 <!-- 3. Script principal (debe ir al final) -->
 <script type="module" src="/static/js/main.js"></script>
 
+<!-- 4. Script para toggle del modal de historial -->
+<script>
+// Toggle del modal de historial de notificaciones
+function toggleNotificationHistory() {
+    const modal = document.getElementById('notification-history-modal');
+    if (!modal) {
+        console.error('Modal de historial no encontrado');
+        return;
+    }
+    
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        
+        // Recargar historial al abrir
+        if (window.loadNotificationHistory) {
+            window.loadNotificationHistory();
+        }
+        
+        // Actualizar badge con el total
+        const badge = document.getElementById('history-badge');
+        if (badge && window.notificationHistory) {
+            badge.textContent = window.notificationHistory.length || 0;
+        }
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+// Asegurar que la función esté disponible globalmente
+window.toggleNotificationHistory = toggleNotificationHistory;
+</script>
 
 </body>
 </html>
