@@ -3,19 +3,61 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+.Python
 
 # Entornos virtuales
 venv/
 env/
 ENV/
+agent-env/
 
-# Archivos de configuración locales
+# Variables de entorno
 .env
+.env.local
+.env.production
 
-# Notas y código generados
+# Archivos generados por el usuario
 notes/
 code/
+output_docs/
+rmn_spectra/input/
+rmn_spectra/output/
+rmn_spectra/plots/
+cache/
+
+# Base de datos
+*.db
+*.sqlite
+*.sqlite3
+notifications.db
 
 # Archivos de sistema
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Certificados y claves
+*.pem
+*.key
+*.crt
+
+# Archivos temporales
+*.tmp
+*.temp
+.cache/
+
+# Mantener estructura de directorios
+!notes/.gitkeep
+!code/.gitkeep
+!cache/.gitkeep

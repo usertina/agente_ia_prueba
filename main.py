@@ -1,4 +1,4 @@
-# main.py - VERSIÓN LIMPIA SIN DUPLICADOS
+# main.py - VERSIÓN OPTIMIZADA PARA RENDER
 import math
 import os
 import threading
@@ -13,6 +13,7 @@ from fastapi import FastAPI, Form, Request, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 # Imports locales
 from agent import use_tool, ask_gemini_for_tool
@@ -25,8 +26,31 @@ load_dotenv()
 # ============= CONFIGURACIÓN DE LA APLICACIÓN =============
 
 app = FastAPI(title="Agente Gemini", version="2.0.0")
-templates = Jinja2Templates(directory="templates")
+
+# CORS para Render (permitir todas las origins en desarrollo)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especificar dominio exacto
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Headers de seguridad
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# Montar archivos estáticos
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # ============= CONFIGURACIÓN DE DIRECTORIOS =============
 
@@ -38,7 +62,8 @@ DIRECTORIES = {
     "OUTPUT_DIR": "output_docs",
     "RMN_INPUT_DIR": "rmn_spectra/input",
     "RMN_OUTPUT_DIR": "rmn_spectra/output",
-    "RMN_PLOTS_DIR": "rmn_spectra/plots"
+    "RMN_PLOTS_DIR": "rmn_spectra/plots",
+    "CACHE_DIR": "cache"
 }
 
 # Crear todos los directorios necesarios
@@ -69,10 +94,24 @@ class Utils:
     
     @staticmethod
     def get_client_info(request: Request) -> dict:
-        """Extrae información del cliente de la request"""
+        """Extrae información del cliente - Compatible con Render y proxies"""
+        # En Render, la IP real viene en X-Forwarded-For
+        forwarded_for = request.headers.get("x-forwarded-for")
+        if forwarded_for:
+            # Tomar la primera IP de la lista (cliente original)
+            ip = forwarded_for.split(",")[0].strip()
+        elif request.headers.get("x-real-ip"):
+            # Fallback a X-Real-IP
+            ip = request.headers.get("x-real-ip")
+        else:
+            # Último fallback
+            ip = request.client.host if request.client else "unknown"
+        
+        user_agent = request.headers.get("user-agent", "unknown")
+        
         return {
-            "ip": request.client.host if request.client else "unknown",
-            "user_agent": request.headers.get("user-agent", "unknown"),
+            "ip": ip,
+            "user_agent": user_agent,
         }
     
     @staticmethod
@@ -118,8 +157,9 @@ class CommandHandler:
         # Comandos de notificaciones
         elif any(keyword in user_input_strip for keyword in [
             "status", "start", "stop", "iniciar", "detener", "test", "probar",
-            "activar emails", "activar patentes", "activar papers", "debug"
-        ]) or user_input_strip.startswith("keywords") or user_input_strip.startswith("categories:"):
+            "activar emails", "activar patentes", "activar papers", "debug",
+            "resumen", "listar"
+        ]) or user_input_strip.startswith("keywords") or user_input_strip.startswith("categories:") or user_input_strip.startswith("borrar"):
             tool = "notifications"
             import tools.notifications as notif_tool
             notif_tool.set_current_user_id(user_id)
@@ -150,12 +190,19 @@ class CommandHandler:
             result = use_tool(tool, user_input)
             return {"tool": tool, "result": result}
 
-# ============= SW =============
+# ============= SERVICE WORKER =============
 
-    @app.get("/sw.js")
-    async def service_worker():
-        """Sirve el Service Worker desde la raíz para que se registre correctamente"""
-        return FileResponse("static/sw.js", media_type="application/javascript")
+@app.get("/sw.js")
+async def service_worker():
+    """Sirve el Service Worker desde la raíz para registro correcto"""
+    return FileResponse(
+        "static/sw.js", 
+        media_type="application/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache"
+        }
+    )
 
 # ============= GESTORES DE ARCHIVOS =============
 
@@ -239,7 +286,8 @@ async def home(request: Request):
     try:
         client_info = Utils.get_client_info(request)
         device_info = {
-            'device_name': f'Web-{client_info["user_agent"][:20]}...'
+            'device_name': f'Web-{client_info["user_agent"][:20]}...',
+            'device_id': f'web_{client_info["ip"].replace(".", "_")}'
         }
         
         user_id, session_id, config = multi_user_system.register_user(
@@ -737,14 +785,60 @@ async def health_check():
             "timestamp": datetime.now().isoformat()
         }, status_code=500)
 
+@app.get("/debug/user")
+async def debug_user_info(request: Request):
+    """Debug: Ver información del usuario detectado - Útil para troubleshooting en Render"""
+    try:
+        client_info = Utils.get_client_info(request)
+        user_id = Utils.get_current_user_id(request)
+        
+        # Verificar si el usuario existe en BD
+        with multi_user_system.get_db_connection() as conn:
+            user_exists = conn.execute(
+                "SELECT user_id, device_name, created_at, last_active FROM users WHERE user_id = ?",
+                (user_id,)
+            ).fetchone()
+        
+        return JSONResponse({
+            "client_ip": client_info["ip"],
+            "user_agent": client_info["user_agent"][:100],
+            "generated_user_id": user_id,
+            "user_exists_in_db": bool(user_exists),
+            "user_details": dict(user_exists) if user_exists else None,
+            "all_headers": dict(request.headers),
+            "forwarded_for": request.headers.get("x-forwarded-for"),
+            "real_ip": request.headers.get("x-real-ip")
+        })
+    except Exception as e:
+        return JSONResponse({
+            "error": str(e),
+            "client_ip": "unknown",
+            "error": str(e),
+            "client_ip": "unknown",
+            "user_agent": "unknown"
+        }, status_code=500)
+
 # ============= EVENTOS DE CICLO DE VIDA =============
 
 @app.on_event("startup")
 async def startup_event():
     """Inicializar el sistema al arrancar"""
     try:
+        print("=" * 60)
+        print("🚀 INICIANDO AGENTE GEMINI")
+        print("=" * 60)
+        
         # Inicializar base de datos
         multi_user_system.init_database()
+        print("✅ Base de datos inicializada")
+        
+        # Verificar directorios
+        for name, path in DIRECTORIES.items():
+            if os.path.exists(path):
+                print(f"✅ {name}: {path}")
+            else:
+                os.makedirs(path, exist_ok=True)
+                print(f"📁 {name} creado: {path}")
         
         # Iniciar scheduler de ayudas en thread separado
         ayudas_thread = threading.Thread(
@@ -757,25 +851,48 @@ async def startup_event():
         # Iniciar monitoreo de notificaciones en background
         success = multi_user_system.start_background_monitoring()
         if success:
-            print("🚀 Sistema de notificaciones multi-usuario iniciado correctamente")
+            print("🔔 Sistema de notificaciones multi-usuario iniciado")
         else:
             print("⚠️ Sistema de notificaciones ya estaba ejecutándose")
-            
-        print(f"✅ Aplicación iniciada - Versión 2.0.0")
-        print(f"📁 Directorios creados: {len(DIRECTORIES)}")
-        print(f"🔧 Herramientas disponibles: 10+")
+        
+        # Información del entorno
+        port = int(os.environ.get("PORT", 8000))
+        is_render = os.environ.get("RENDER", False)
+        
+        print("=" * 60)
+        print(f"📦 Versión: 2.0.0")
+        print(f"🌍 Entorno: {'Render' if is_render else 'Local'}")
+        print(f"🔌 Puerto: {port}")
+        print(f"📁 Directorios: {len(DIRECTORIES)}")
+        print(f"🔧 Herramientas: 10+")
+        print("=" * 60)
+        print("✅ APLICACIÓN LISTA")
+        print("=" * 60)
         
     except Exception as e:
         print(f"❌ Error iniciando sistema: {e}")
+        import traceback
+        traceback.print_exc()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Detener el sistema al cerrar"""
     try:
+        print("\n" + "=" * 60)
+        print("⏹️ DETENIENDO AGENTE GEMINI")
+        print("=" * 60)
+        
         # Detener monitoreo de notificaciones
         multi_user_system.stop_background_monitoring()
-        print("⏹️ Sistema de notificaciones detenido correctamente")
-        print("👋 Aplicación cerrada correctamente")
+        print("🔔 Sistema de notificaciones detenido")
+        
+        # Guardar estadísticas finales
+        active_users = len(multi_user_system.get_active_users(hours=24))
+        print(f"📊 Usuarios activos últimas 24h: {active_users}")
+        
+        print("=" * 60)
+        print("👋 APLICACIÓN CERRADA CORRECTAMENTE")
+        print("=" * 60)
         
     except Exception as e:
         print(f"⚠️ Error deteniendo sistema: {e}")
@@ -789,21 +906,41 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     host = "0.0.0.0"  # Importante para Render
     
+    # Detectar entorno
+    is_production = os.environ.get("RENDER", False) or os.environ.get("PRODUCTION", False)
+    
     # Información de inicio
-    print("=" * 60)
+    print("\n" + "=" * 60)
     print("🤖 AGENTE GEMINI - SISTEMA INTELIGENTE")
     print("=" * 60)
-    print(f"🚀 Iniciando servidor en http://{host}:{port}")
-    print(f"📍 Acceso local: http://localhost:{port}")
-    print(f"🔔 Sistema de notificaciones: Habilitado")
-    print(f"📁 Directorios configurados: {', '.join(DIRECTORIES.keys())}")
-    print("=" * 60)
+    print(f"🚀 Iniciando servidor...")
+    print(f"🌍 Entorno: {'Producción (Render)' if is_production else 'Desarrollo'}")
+    print(f"🔌 Host: {host}")
+    print(f"📍 Puerto: {port}")
+    print(f"📍 URL local: http://localhost:{port}")
+    print(f"🔔 Notificaciones: Habilitadas")
+    print(f"📁 Directorios: {', '.join(DIRECTORIES.keys())}")
+    print("=" * 60 + "\n")
     
-    # Iniciar servidor
-    uvicorn.run(
-        "main:app",
-        host=host,
-        port=port,
-        reload=True,  # Cambiar a False en producción
-        log_level="info"
-    )
+    # Configuración de uvicorn según entorno
+    if is_production:
+        # Configuración para producción (Render)
+        uvicorn.run(
+            "main:app",
+            host=host,
+            port=port,
+            reload=False,  # No reload en producción
+            log_level="info",
+            access_log=True,
+            workers=1  # Render usa 1 worker por defecto
+        )
+    else:
+        # Configuración para desarrollo local
+        uvicorn.run(
+            "main:app",
+            host=host,
+            port=port,
+            reload=True,  # Hot reload en desarrollo
+            log_level="debug",
+            access_log=True
+        )
