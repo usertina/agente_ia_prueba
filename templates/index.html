@@ -18,7 +18,6 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Estilo para las pestañas de la guía */
         .tab-button.active {
             background-color: var(--tw-color-blue-100, #DBEAFE);
             color: var(--tw-color-blue-800, #1E40AF);
@@ -28,7 +27,7 @@
             color: var(--tw-color-blue-200, #BFDBFE);
         }
     </style>
-    <link rel="stylesheet" href="/static/style.css"> 
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
 
@@ -47,9 +46,7 @@
         </div>
 
         <div id="content-area" class="flex-1 overflow-y-auto scrollbar-hide">
-            
-            <div id="history" class="space-y-4">
-                </div>
+            <div id="history" class="space-y-4"></div>
         </div>
 
         <div id="loading-indicator" class="hidden text-center py-2">
@@ -72,8 +69,7 @@
     <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300">
         <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
 
-        
-<div id="notifications-section">
+        <div id="notifications-section">
             <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2">🔔 Notificaciones</h3>
             <div class="space-y-2 mb-4">
                 <button onclick="configureNotifications()" 
@@ -84,11 +80,9 @@
                          class="block w-full text-center p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors">
                     🧪 Probar
                 </button>
-                
             </div>
         </div>
 
-        
         <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <h3 class="font-medium text-gray-800 dark:text-gray-200 mb-2">🔔 Notificaciones</h3>
             <p class="text-sm text-gray-600 dark:text-gray-300" id="notification-status">Estado: Iniciando...</p>
@@ -104,70 +98,17 @@
                 </div>
             </div>
 
-        <!-- Añadir después de la sección de notificaciones -->
-<div class="mb-4">
-    <button id="ayudas-toggle" onclick="toggleAyudasSection()" 
-             class="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium">
-        💶 Ayudas y Subvenciones ▶
-    </button>
-</div>
+            <div class="mb-4">
+                <button id="ayudas-toggle" onclick="toggleAyudasSection()" 
+                         class="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium">
+                    💶 Ayudas y Subvenciones ▶
+                </button>
+            </div>
 
-<div id="ayudas-section" class="hidden space-y-3 mb-4">
-    <div class="p-3 bg-green-50 dark:bg-green-900 rounded-lg">
-        <h4 class="font-medium text-green-800 dark:text-green-200 mb-2">📊 Monitor de Ayudas</h4>
-        <p class="text-xs text-green-600 dark:text-green-300" id="ayudas-stats">Sin datos</p>
-    </div>
+            <div id="ayudas-section" class="hidden space-y-3 mb-4">
+                <!-- Contenido de ayudas cargado por ayudas.js -->
+            </div>
 
-    <div class="space-y-2">
-        <button onclick="searchAyudas()" 
-                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
-            🔍 Buscar Ayudas Actuales
-        </button>
-        
-        <button onclick="configureAyudasRegion()" 
-                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
-            📍 Configurar Región
-        </button>
-        
-        <button onclick="activateAyudasNotifications()" 
-                 class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
-            🔔 Activar Notificaciones
-        </button>
-        
-        <button onclick="testAyudasSystem()" 
-                 class="w-full p-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors">
-            🧪 Test del Sistema
-        </button>
-    </div>
-
-    <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
-        <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">🏷️ Filtros rápidos:</h5>
-        <div class="grid grid-cols-2 gap-1">
-            <button onclick="filterAyudas('innovacion')" 
-                     class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors">
-                Innovación
-            </button>
-            <button onclick="filterAyudas('empleo')" 
-                     class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors">
-                Empleo
-            </button>
-            <button onclick="filterAyudas('sostenibilidad')" 
-                     class="px-2 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600 transition-colors">
-                Sostenible
-            </button>
-            <button onclick="filterAyudas('digital')" 
-                     class="px-2 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600 transition-colors">
-                Digital
-            </button>
-        </div>
-    </div>
-
-    <div id="ayudas-list" class="max-h-40 overflow-y-auto space-y-2">
-        <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
-            Usa "Buscar Ayudas Actuales" para empezar
-        </div>
-    </div>
-</div>    
             <div id="notes-section">
                 <h4 class="font-medium text-gray-600 dark:text-gray-400 mb-2">📝 Notas</h4>
                 <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
@@ -182,64 +123,7 @@
         </div>
 
         <div id="rmn-section" class="hidden space-y-3 mb-4">
-            <div class="p-3 bg-teal-50 dark:bg-teal-900 rounded-lg">
-                <h4 class="font-medium text-teal-800 dark:text-teal-200 mb-2">📊 Estadísticas RMN</h4>
-                <p class="text-xs text-teal-600 dark:text-teal-300" id="rmn-stats">Espectros: 0 | Limpios: 0 | Gráficos: 0</p>
-            </div>
-
-            <div class="space-y-2">
-                <button onclick="showRMNHelp()" 
-                         class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
-                    ❓ Ayuda RMN
-                </button>
-                
-                <button onclick="showRMNMethods()" 
-                         class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
-                    🧪 Métodos disponibles
-                </button>
-                
-                <button onclick="listSpectra()" 
-                         class="w-full p-2 bg-teal-100 dark:bg-teal-800 text-teal-800 dark:text-teal-200 rounded text-sm hover:bg-teal-200 dark:hover:bg-teal-700 transition-colors">
-                    📋 Listar espectros
-                </button>
-            </div>
-
-            <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                <h5 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">⚡ Comandos rápidos:</h5>
-                <div class="grid grid-cols-2 gap-1">
-                    <button onclick="quickCleanAuto()" 
-                             class="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors">
-                        Auto
-                    </button>
-                    <button onclick="quickCleanSavgol()" 
-                             class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors">
-                        Savgol
-                    </button>
-                    <button onclick="quickCleanGaussian()" 
-                             class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 transition-colors">
-                        Gaussian
-                    </button>
-                    <button onclick="quickCleanMedian()" 
-                             class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors">
-                        Median
-                    </button>
-                </div>
-            </div>
-
-            <div class="p-3 border-2 border-dashed border-teal-300 dark:border-teal-600 rounded-lg">
-                <input type="file" id="spectrum-upload" accept=".csv,.txt,.dat,.asc" class="hidden" 
-                        onchange="uploadSpectrum(event)">
-                <button onclick="document.getElementById('spectrum-upload').click()" 
-                         class="w-full p-2 text-teal-600 dark:text-teal-400 text-sm hover:bg-teal-50 dark:hover:bg-teal-900 rounded transition-colors">
-                    📁 Subir Espectro
-                </button>
-            </div>
-
-            <div id="cleaned-spectra" class="space-y-3">
-                <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
-                    Todavía no hay espectros limpios
-                </div>
-            </div>
+            <!-- Contenido RMN cargado por rmn.js -->
         </div>
 
         <div class="mb-4">
@@ -250,72 +134,17 @@
         </div>
 
         <div id="document-section" class="hidden space-y-3 mb-4">
-            <div class="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg">
-                <h4 class="font-medium text-orange-800 dark:text-orange-200 mb-2">📊 Estadísticas</h4>
-                <p class="text-xs text-orange-600 dark:text-orange-300" id="document-stats">Plantillas: 0 | Datos: 0 | Generados: 0</p>
-            </div>
-
-            <div class="space-y-3">
-                <div class="border border-orange-200 dark:border-orange-700 rounded-lg overflow-hidden">
-                    <button onclick="toggleDocumentTab('templates')" 
-                             class="w-full p-2 bg-orange-100 dark:bg-orange-800 text-orange-800 dark:text-orange-200 font-medium text-sm hover:bg-orange-200 dark:hover:bg-orange-700 transition-colors">
-                        📄 Plantillas <span id="templates-toggle">▼</span>
-                    </button>
-                    <div id="templates-content" class="p-2 bg-white dark:bg-gray-800 max-h-40 overflow-y-auto">
-                        <div id="templates-list">
-                            <p class="text-xs text-gray-500 italic text-center">Cargando...</p>
-                        </div>
-                        <div class="mt-2 p-2 border-2 border-dashed border-orange-300 dark:border-orange-600 rounded">
-                            <input type="file" id="template-file-input" accept=".docx,.txt,.pdf" class="hidden" onchange="uploadTemplate()">
-                            <button onclick="document.getElementById('template-file-input').click()" 
-                                     class="w-full p-1 text-orange-600 dark:text-orange-400 text-xs hover:bg-orange-50 dark:hover:bg-orange-900 rounded">
-                                📁 Subir Plantilla
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border border-green-200 dark:border-green-700 rounded-lg overflow-hidden">
-                    <button onclick="toggleDocumentTab('data')" 
-                             class="w-full p-2 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 font-medium text-sm hover:bg-green-200 dark:hover:bg-green-700 transition-colors">
-                        📊 Datos <span id="data-toggle">▶</span>
-                    </button>
-                    <div id="data-content" class="hidden p-2 bg-white dark:bg-gray-800 max-h-40 overflow-y-auto">
-                        <div id="data-files-list">
-                            <p class="text-xs text-gray-500 italic text-center">Cargando...</p>
-                        </div>
-                        <div class="mt-2 p-2 border-2 border-dashed border-green-300 dark:border-green-600 rounded">
-                            <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.txt" class="hidden" onchange="uploadDataFile()">
-                            <button onclick="document.getElementById('data-file-input').click()" 
-                                     class="w-full p-1 text-green-600 dark:text-green-400 text-xs hover:bg-green-50 dark:hover:bg-green-900 rounded">
-                                📁 Subir Datos
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="border border-yellow-200 dark:border-yellow-700 rounded-lg overflow-hidden">
-                    <button onclick="toggleDocumentTab('output')" 
-                             class="w-full p-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 font-medium text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors">
-                        📁 Generados <span id="output-toggle">▶</span>
-                    </button>
-                    <div id="output-content" class="hidden p-2 bg-white dark:bg-gray-800 max-h-40 overflow-y-auto">
-                        <div id="output-files-list">
-                            <p class="text-xs text-gray-500 italic text-center">Cargando...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Contenido documentos cargado por document.js -->
         </div>
     </div>
 </div>
 
-
+<!-- Modal de Guía -->
 <div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso y Palabras Clave del Agente</h2>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso</h2>
             <button id="close-guide-keywords-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -329,690 +158,30 @@
         </div>
 
         <div id="tab-tools" class="tab-content">
-            <div class="p-4 bg-yellow-100 dark:bg-yellow-800 rounded-xl mb-4">
-                <h3 class="font-bold text-yellow-800 dark:text-yellow-100 text-lg">📝 Note (Notas)</h3>
-                <p class="mt-2">Maneja tus notas personales. Se guardan automáticamente con fecha y hora.</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Guardar nota:</strong> <code>guardar: tu nota aquí</code></li>
-                    <li><strong>Ver todas:</strong> <code>leer</code></li>
-                    <li><strong>Buscar:</strong> <code>buscar: término</code></li>
-                    <li><strong>Contar:</strong> <code>contar</code></li>
-                    <li><strong>Borrar todas:</strong> <code>borrar</code></li>
-                    <li><strong>Descargar:</strong> <code>descargar</code></li>
-                </ul>
-            </div>
-
-            <div class="p-4 bg-green-100 dark:bg-green-800 rounded-xl mb-4">
-                <h3 class="font-bold text-green-800 dark:text-green-100 text-lg">💻 Save Code (Guardar Código)</h3>
-                <p class="mt-2">Guarda snippets de código en la carpeta de archivos.</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Formato:</strong> <code>nombre_archivo||contenido_del_codigo</code></li>
-                    <li><strong>Ejemplo:</strong> <code>script.py||print("Hola Mundo")</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>calculadora.py||def suma(a,b): return a+b</code></li>
-                </ul>
-            </div>
-
-            <div class="p-4 bg-purple-100 dark:bg-purple-800 rounded-xl mb-4">
-                <h3 class="font-bold text-purple-800 dark:text-purple-100 text-lg">⚙️ Code Gen (Generar Código)</h3>
-                <p class="mt-2">Genera código automáticamente usando IA y lo guarda automáticamente.</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Formato básico:</strong> <code>generar: un script en Python que diga hola mundo</code></li>
-                    <li><strong>Con nombre personalizado:</strong> <code>mi_script.py||generar un script que haga una calculadora</code></li>
-                    <li><strong>Solo descripción:</strong> <code>crear una función que sume números</code></li>
-                </ul>
-            </div>
-
-            <div class="p-4 bg-indigo-100 dark:bg-indigo-800 rounded-xl mb-4">
-                <h3 class="font-bold text-indigo-800 dark:text-indigo-100 text-lg">🧮 Calculator (Calculadora)</h3>
-                <p class="mt-2">Evalúa expresiones matemáticas complejas.</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>2 + 2 * (3 - 1)</code> devuelve <code>6</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>(100 / 2) ** 2</code> devuelve <code>2500.0</code></li>
-                </ul>
-            </div>
-
-            <div class="p-4 bg-blue-100 dark:bg-blue-800 rounded-xl mb-4">
-                <h3 class="font-bold text-blue-800 dark:text-blue-100 text-lg">🔍 Web Search (Búsqueda en la web)</h3>
-                <p class="mt-2">Busca en internet y devuelve los 5 primeros resultados. (Requiere el uso de la herramienta `google:search`)</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>buscar noticias de inteligencia artificial</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>buscar patentes sobre energía solar</code></li>
-                </ul>
-            </div>
-
-            <div class="p-4 bg-red-100 dark:bg-red-800 rounded-xl mb-4">
-                <h3 class="font-bold text-red-800 dark:text-red-100 text-lg">🌐 Web Open (Abrir Enlaces)</h3>
-                <p class="mt-2">Abre una URL directamente en tu navegador (asumiendo función de backend).</p>
-                <ul class="mt-2 list-disc list-inside text-sm">
-                    <li><strong>Ejemplo:</strong> <code>https://www.wikipedia.org</code></li>
-                    <li><strong>Otro ejemplo:</strong> <code>wikipedia.org</code> (agrega https automáticamente)</li>
-                </ul>
-            </div>
+            <!-- Contenido de herramientas -->
         </div>
 
         <div id="tab-keywords" class="tab-content hidden">
-            <div class="mb-4">
-                <h3 class="font-semibold text-teal-700 dark:text-teal-300">🧪 RMN Spectrum Cleaner</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto text-xs">
-                    rmn, espectro, espectros, resonancia, ruido, limpiar espectro, filtrar, savgol, gaussian, mediana, wiener, línea base, snr, ppm, intensidad, picos, analizar espectro, comparar espectro, pfos, pfas, contaminante, array, cromatografia, espectrometria, masas, gc-ms, lc-ms
-                </p>
-            </div>
-            
-            <div class="mb-4">
-                <h3 class="font-semibold text-blue-700 dark:text-blue-300">💻 Generación de Código</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto text-xs">
-                    generar, genera, crear, crea, escribir, escribe, codigo, código, script, programa, función, funcion, algoritmo, clase, app, aplicación, aplicacion
-                </p>
-            </div>
-
-            <div class="mb-4">
-                <h3 class="font-semibold text-green-700 dark:text-green-300">🔔 Notificaciones</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto text-xs">
-                    listar, listar 10, listar 20, listar papers, listar patentes, listar patents, ver, mostrar, ver recientes, últimas, últimos, recientes, resumen, desglose, borrar, eliminar, borrar papers, eliminar papers, borrar todo, eliminar todo, limpiar, reset, clear, papers, patentes, emails, notificaciones, tipo, tipos, ID, id, identificador, ref, referencia, gestionar, administrar, control, verificar, consultar, notificacion, notificación, alerta, avisar, aviso, email, correo, patente, paper, científico, monitoreo, notificar, activar, keywords, categories, status, estado, test, probar
-                </p>
-            </div>
-
-            <div class="mb-4">
-                <h3 class="font-semibold text-purple-700 dark:text-purple-300">📄 Documentos</h3>
-                <p class="mt-1 font-mono bg-gray-100 dark:bg-gray-700 p-2 rounded-lg overflow-x-auto text-xs">
-                    plantilla, rellenar, documento, formulario, listar plantillas, listar datos, analizar, crear ejemplo, ayuda, subvencion, subvención, document_filler, plantillas, datos, rellenar:
-                </p>
-            </div>
+            <!-- Contenido de palabras clave -->
         </div>
     </div>
 </div>
 
+<!-- Scripts - ORDEN IMPORTANTE -->
+<!-- 1. Helpers y utilidades -->
+<script src="/static/js/ui-helpers.js"></script>
 
-<script src="/static/script.js"></script>
-<script type="module" src="/static/js/rmn.js"></script>
-<script type="module" src="/static/js/document.js"></script>
+<!-- 2. Módulos de funcionalidad -->
+<script src="/static/js/tema.js"></script>
+<script src="/static/js/guia.js"></script>
+<script src="/static/js/notas.js"></script>
+<script src="/static/js/archivos.js"></script>
+<script src="/static/js/ayudas.js"></script>
+<script src="/static/js/rmn.js"></script>
+<script src="/static/js/document.js"></script>
 
-<script>
-// =============================================================================
-// VARIABLES GLOBALES (para evitar referencias a scripts externos no cargados)
-// Asumo que estas funciones existen en /static/script.js
-// function configureNotifications() { /* ... */ }
-// function testNotifications() { /* ... */ }
-// =============================================================================
-
-const commandForm = document.getElementById('commandForm');
-const userInput = document.getElementById('user_input');
-const guideKeywordsModal = document.getElementById("guide-keywords-modal");
-const guideButton = document.getElementById("guide-button");
-const closeGuideKeywordsButton = document.getElementById("close-guide-keywords-modal");
-
-// =============================================================================
-// MANEJO DE LA GUÍA Y TABS DEL MODAL
-// =============================================================================
-
-guideButton.addEventListener("click", () => guideKeywordsModal.classList.remove("hidden"));
-closeGuideKeywordsButton.addEventListener("click", () => guideKeywordsModal.classList.add("hidden"));
-guideKeywordsModal.addEventListener("click", (e) => {
-    if(e.target === guideKeywordsModal) guideKeywordsModal.classList.add("hidden");
-});
-
-const tabButtons = document.querySelectorAll(".tab-button");
-const tabContents = document.querySelectorAll(".tab-content");
-
-function switchTab(targetTab) {
-    tabContents.forEach(tc => tc.classList.add("hidden"));
-    tabButtons.forEach(b => b.classList.remove("active", "bg-blue-100", "dark:bg-blue-700"));
-    tabButtons.forEach(b => b.classList.add("bg-gray-100", "dark:bg-gray-600"));
-    
-    document.getElementById("tab-" + targetTab).classList.remove("hidden");
-    const activeBtn = document.querySelector(`.tab-button[data-tab="${targetTab}"]`);
-    activeBtn.classList.remove("bg-gray-100", "dark:bg-gray-600");
-    activeBtn.classList.add("active", "bg-blue-100", "dark:bg-blue-700");
-}
-
-tabButtons.forEach(btn => {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-});
-
-// Asegurarse de que el tab de herramientas esté activo al inicio
-document.addEventListener('DOMContentLoaded', () => {
-    switchTab('tools');
-});
-
-// =============================================================================
-// FUNCIONES AUXILIARES PARA MENSAJES (MITIGACIÓN XSS)
-// =============================================================================
-
-function createMessageEntry(type, icon, message) {
-    const historyDiv = document.getElementById('history');
-    const entry = document.createElement('div');
-    entry.className = `entry p-4 rounded-lg shadow-md border-l-4 mb-4 
-                       ${type === 'success' ? 'bg-green-100 dark:bg-green-800 border-green-500' :
-                         type === 'error'   ? 'bg-red-100 dark:bg-red-800 border-red-500' :
-                         'bg-blue-100 dark:bg-blue-800 border-blue-500'}`;
-    
-    const contentDiv = document.createElement('div');
-    contentDiv.className = `font-bold ${type === 'success' ? 'text-green-800 dark:text-green-200' :
-                                      type === 'error'   ? 'text-red-800 dark:text-red-200' :
-                                      'text-blue-800 dark:text-blue-200'}`;
-    contentDiv.textContent = `${icon} ${message}`;
-    
-    entry.appendChild(contentDiv);
-    historyDiv.prepend(entry);
-    
-    setTimeout(() => entry.remove(), 7000);
-}
-
-function showSuccessMessage(message) {
-    createMessageEntry('success', '✅', message);
-}
-
-function showErrorMessage(message) {
-    createMessageEntry('error', '❌', message);
-}
-
-function showInfoMessage(message) {
-    createMessageEntry('info', '💡', message);
-}
-
-
-// =============================================================================
-// FUNCIONES DE CONTROL RMN (SOBREESCRITAS para enviar comandos al chat)
-// =============================================================================
-
-function toggleRMNSection() {
-    const section = document.getElementById('rmn-section');
-    const button = document.getElementById('rmn-toggle');
-    
-    if (section.classList.contains('hidden')) {
-        section.classList.remove('hidden');
-        button.innerHTML = '🧪 Espectros RMN ▼';
-        loadRMNStats();
-    } else {
-        section.classList.add('hidden');
-        button.innerHTML = '🧪 Espectros RMN ▶';
-    }
-}
-
-function showRMNHelp() { userInput.value = 'ayuda rmn'; commandForm.dispatchEvent(new Event('submit')); }
-function showRMNMethods() { userInput.value = 'métodos'; commandForm.dispatchEvent(new Event('submit')); }
-function listSpectra() { userInput.value = 'listar espectros'; commandForm.dispatchEvent(new Event('submit')); }
-function quickCleanAuto() { userInput.value = 'limpiar auto'; commandForm.dispatchEvent(new Event('submit')); }
-function quickCleanSavgol() { userInput.value = 'limpiar con savgol'; commandForm.dispatchEvent(new Event('submit')); }
-function quickCleanGaussian() { userInput.value = 'limpiar con gaussian'; commandForm.dispatchEvent(new Event('submit')); }
-function quickCleanMedian() { userInput.value = 'limpiar con median'; commandForm.dispatchEvent(new Event('submit')); }
-function analyzeCleanSpectrum(filename) { userInput.value = `analizar: ${filename}`; commandForm.dispatchEvent(new Event('submit')); }
-function compareSpectra(filename) { userInput.value = `comparar: ${filename}`; commandForm.dispatchEvent(new Event('submit')); }
-
-
-async function uploadSpectrum(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-        // Asumo que hay una función de backend /upload/spectrum
-        const response = await fetch('/upload/spectrum', { method: 'POST', body: formData });
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            if (result.next_step) { showInfoMessage(`💡 Siguiente paso: ${result.next_step}`); }
-            loadRMNStats();
-            event.target.value = '';
-        } else {
-            showErrorMessage(result.error || 'Error subiendo espectro');
-        }
-    } catch (error) {
-        showErrorMessage(`Error de red subiendo espectro: ${error.message}`);
-    }
-}
-
-async function loadRMNStats() {
-    try {
-        // Asumo que hay una función de backend /files/spectra
-        const response = await fetch('/files/spectra');
-        const data = await response.json();
-        
-        const statsElement = document.getElementById('rmn-stats');
-        if (statsElement) {
-            const spectraCount = data.spectra ? data.spectra.length : 0;
-            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
-            const plotsCount = data.plots ? data.plots.length : 0;
-            
-            statsElement.textContent = `Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}`;
-        }
-        // Llamar a loadCleanedSpectra aquí o desde el backend si es necesario
-    } catch (error) {
-        console.error('Error cargando estadísticas RMN:', error);
-    }
-}
-
-function showCleanResult(result) {
-    const container = document.getElementById('cleaned-spectra');
-    if (!container) return;
-
-    // Eliminar mensaje de "no hay espectros limpios" si existe
-    const emptyMsg = container.querySelector('div.text-xs.italic');
-    if (emptyMsg) emptyMsg.remove();
-
-    const cleanFileName = result.cleaned_file ? result.cleaned_file.split('/').pop() : 'Archivo desconocido';
-    const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : null;
-    
-    const paramsStr = result.params ? 
-        Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
-        'Parámetros automáticos';
-
-    const entry = document.createElement('div');
-    entry.className = 'p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500 mb-4';
-    entry.innerHTML = `
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center space-x-3">
-                <div class="text-2xl">🧪</div>
-                <div>
-                    <div class="text-green-800 dark:text-green-200 font-bold text-lg">ESPECTRO LIMPIADO</div>
-                    <div class="text-xs text-green-600 dark:text-green-400">
-                        ${new Date().toLocaleString('es-ES')}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-            <div class="space-y-1">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
-                    <span class="font-mono text-gray-800 dark:text-gray-200">${result.original_file}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
-                    <span class="font-mono text-green-700 dark:text-green-300">${cleanFileName}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Método:</span>
-                    <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
-                </div>
-            </div>
-            <div class="space-y-1">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Mejora SNR:</span>
-                    <span class="font-semibold text-green-600 dark:text-green-400">+${result.snr_improvement || '0'} dB</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Parámetros:</span>
-                    <span class="text-xs text-gray-700 dark:text-gray-300">${paramsStr}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Estado:</span>
-                    <span class="text-green-600 dark:text-green-400 font-semibold">✅ Listo</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
-            <a href="/download/cleaned/${encodeURIComponent(cleanFileName)}" download
-               class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                📥 Descargar CSV Limpio
-            </a>
-            
-            ${result.plot_file ? `
-            <a href="/download/plot/${encodeURIComponent(plotFileName)}" download
-               class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-                📊 Descargar Gráfico
-            </a>
-            ` : ''}
-
-            <button onclick="analyzeCleanSpectrum('${cleanFileName}')" 
-                      class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
-                🔍 Analizar
-            </button>
-
-            <button onclick="compareSpectra('${result.original_file}')" 
-                      class="flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
-                📊 Comparar
-            </button>
-        </div>
-
-        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
-            <span>💡 Haz clic en "Analizar" para ver estadísticas detalladas</span>
-            <span>🕒 Procesado en ${result.processing_time || '0'}s</span>
-        </div>
-    `;
-
-    container.prepend(entry);
-    loadRMNStats();
-}
-
-// Funciones JavaScript para ayudas
-function toggleAyudasSection() {
-    const section = document.getElementById('ayudas-section');
-    const toggle = document.getElementById('ayudas-toggle');
-    
-    if (section.classList.contains('hidden')) {
-        section.classList.remove('hidden');
-        toggle.innerHTML = '💶 Ayudas y Subvenciones ▼';
-        loadAyudasStats();
-    } else {
-        section.classList.add('hidden');
-        toggle.innerHTML = '💶 Ayudas y Subvenciones ▶';
-    }
-}
-
-function searchAyudas() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'ayudas buscar';
-    form.dispatchEvent(new Event('submit'));
-}
-
-function filterAyudas(tipo) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `ayudas filtrar: ${tipo}`;
-    form.dispatchEvent(new Event('submit'));
-}
-
-function configureAyudasRegion() {
-    const regions = ['euskadi', 'gipuzkoa', 'bizkaia', 'araba', 'nacional', 'todas'];
-    const region = prompt(`Selecciona tu región:\n${regions.join(', ')}`);
-    
-    if (region && regions.includes(region.toLowerCase())) {
-        const input = document.getElementById('user_input');
-        const form = document.getElementById('commandForm');
-        input.value = `ayudas region: ${region}`;
-        form.dispatchEvent(new Event('submit'));
-    }
-}
-
-function activateAyudasNotifications() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'ayudas activar';
-    form.dispatchEvent(new Event('submit'));
-}
-
-function testAyudasSystem() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'ayudas test';
-    form.dispatchEvent(new Event('submit'));
-}
-
-async function loadAyudasStats() {
-    // Esta función podría hacer una llamada API para obtener estadísticas
-    const statsEl = document.getElementById('ayudas-stats');
-    statsEl.textContent = 'Sistema de monitoreo activo - 5 fuentes configuradas';
-}
-
-// Escuchar notificaciones de ayudas
-window.addEventListener('ayudasNotification', function(event) {
-    const ayuda = event.detail;
-    showAyudaNotification(ayuda);
-});
-
-function showAyudaNotification(ayuda) {
-    // Mostrar notificación del navegador
-    if ('Notification' in window && Notification.permission === 'granted') {
-        const notification = new Notification(ayuda.title, {
-            body: ayuda.message,
-            icon: '💶',
-            tag: `ayuda_${ayuda.data.id}`,
-            data: ayuda.data
-        });
-        
-        notification.onclick = function() {
-            window.open(ayuda.data.url, '_blank');
-            notification.close();
-        };
-    }
-    
-    // Actualizar lista de ayudas en el panel
-    updateAyudasList(ayuda);
-}
-
-function updateAyudasList(ayuda) {
-    const listEl = document.getElementById('ayudas-list');
-    if (listEl) {
-        const ayudaEl = document.createElement('div');
-        ayudaEl.className = 'p-2 bg-green-50 dark:bg-green-800 rounded text-xs cursor-pointer hover:bg-green-100 dark:hover:bg-green-700';
-        ayudaEl.innerHTML = `
-            <div class="font-semibold text-green-800 dark:text-green-200">${ayuda.title}</div>
-            <div class="text-green-600 dark:text-green-300">${ayuda.message}</div>
-            <div class="text-xs text-green-500 dark:text-green-400 mt-1">
-                ${ayuda.data.fecha_limite ? `Límite: ${ayuda.data.fecha_limite}` : 'Sin fecha límite'}
-            </div>
-        `;
-        ayudaEl.onclick = () => window.open(ayuda.data.url, '_blank');
-        
-        // Insertar al principio de la lista
-        listEl.insertBefore(ayudaEl, listEl.firstChild);
-        
-        // Limitar a 10 elementos
-        while (listEl.children.length > 10) {
-            listEl.removeChild(listEl.lastChild);
-        }
-    }
-}
-// =============================================================================
-// FUNCIONES DE CONTROL DE DOCUMENTOS
-// =============================================================================
-
-function toggleDocumentSection() {
-    const section = document.getElementById('document-section');
-    const button = document.getElementById('document-toggle');
-    
-    if (section.classList.contains('hidden')) {
-        section.classList.remove('hidden');
-        button.innerHTML = '📄 Documentos ▼';
-        loadDocumentFiles();
-    } else {
-        section.classList.add('hidden');
-        button.innerHTML = '📄 Documentos ▶';
-    }
-}
-
-function toggleDocumentTab(tab) {
-    const content = document.getElementById(`${tab}-content`);
-    const toggle = document.getElementById(`${tab}-toggle`);
-    
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        toggle.textContent = '▼';
-    } else {
-        content.classList.add('hidden');
-        toggle.textContent = '▶';
-    }
-}
-
-function analyzeTemplate(filename) {
-    userInput.value = `analizar: ${filename}`;
-    commandForm.dispatchEvent(new Event('submit'));
-}
-
-// Funciones de carga (corregido XSS usando textContent)
-
-function updateTemplatesList(templates) {
-    const container = document.getElementById('templates-list');
-    if (!container) return;
-    
-    if (templates.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay plantillas</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    templates.forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1';
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'text-xs font-medium text-gray-800 dark:text-gray-200 truncate';
-        // Usar textContent para mitigar XSS
-        nameSpan.textContent = file.name; 
-        
-        div.appendChild(nameSpan);
-        div.innerHTML += `
-            <div class="flex space-x-1 ml-1">
-                <button onclick="analyzeTemplate('${file.name}')" class="text-blue-600 hover:text-blue-800 text-sm" title="Analizar">🔍</button>
-                <a href="/download/template/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Repetir el patrón de mitigación XSS para otras listas (updateDataFilesList, updateOutputFilesList)
-function updateDataFilesList(dataFiles) {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    
-    if (dataFiles.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay archivos de datos</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    dataFiles.forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1';
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'text-xs font-medium text-gray-800 dark:text-gray-200 truncate';
-        nameSpan.textContent = file.name;
-        
-        div.appendChild(nameSpan);
-        div.innerHTML += `
-            <div class="flex space-x-1 ml-1">
-                <a href="/download/data/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function updateOutputFilesList(outputFiles) {
-    const container = document.getElementById('output-files-list');
-    if (!container) return;
-    
-    if (outputFiles.length === 0) {
-        container.innerHTML = '<p class="text-xs text-gray-500 italic text-center">No hay documentos generados</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    outputFiles.forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'flex justify-between items-center p-1 bg-gray-50 dark:bg-gray-700 rounded mb-1';
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'text-xs font-medium text-gray-800 dark:text-gray-200 truncate';
-        nameSpan.textContent = file.name;
-        
-        div.appendChild(nameSpan);
-        div.innerHTML += `
-            <div class="flex space-x-1 ml-1">
-                <a href="/download/output/${encodeURIComponent(file.name)}" class="text-gray-600 hover:text-gray-800 text-sm" title="Descargar">⬇️</a>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-
-async function loadDocumentFiles() {
-    try {
-        // Asumo que hay una función de backend /files/documents
-        const response = await fetch('/files/documents');
-        const data = await response.json();
-        
-        updateDocumentStats(data);
-        updateTemplatesList(data.templates || []);
-        updateDataFilesList(data.data_files || []);
-        updateOutputFilesList(data.output_files || []);
-    } catch (error) {
-        console.error('Error cargando archivos de documentos:', error);
-    }
-}
-
-function updateDocumentStats(data) {
-    const statsElement = document.getElementById('document-stats');
-    if (statsElement) {
-        const templatesCount = data.templates ? data.templates.length : 0;
-        const dataCount = data.data_files ? data.data_files.length : 0;
-        const outputCount = data.output_files ? data.output_files.length : 0;
-        statsElement.textContent = `Plantillas: ${templatesCount} | Datos: ${dataCount} | Generados: ${outputCount}`;
-    }
-}
-
-// Funciones de subida (mantienen la lógica asíncrona)
-
-async function uploadTemplate() {
-    const fileInput = document.getElementById('template-file-input');
-    const file = fileInput.files[0];
-    
-    if (!file) { showErrorMessage('Selecciona un archivo de plantilla'); return; }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('/upload/template', { method: 'POST', body: formData });
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            if (result.next_step) { showInfoMessage(`💡 Siguiente paso: ${result.next_step}`); }
-            loadDocumentFiles();
-            fileInput.value = '';
-        } else {
-            showErrorMessage(result.error || 'Error subiendo plantilla');
-        }
-    } catch (error) {
-        showErrorMessage(`Error de red subiendo plantilla: ${error.message}`);
-    }
-}
-
-async function uploadDataFile() {
-    const fileInput = document.getElementById('data-file-input');
-    const file = fileInput.files[0];
-    
-    if (!file) { showErrorMessage('Selecciona un archivo de datos'); return; }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('/upload/data', { method: 'POST', body: formData });
-        const result = await response.json();
-        
-        if (result.success) {
-            showSuccessMessage(result.message);
-            if (result.next_step) { showInfoMessage(`💡 Siguiente paso: ${result.next_step}`); }
-            loadDocumentFiles();
-            fileInput.value = '';
-        } else {
-            showErrorMessage(result.error || 'Error subiendo archivo');
-        }
-    } catch (error) {
-        showErrorMessage(`Error de red subiendo archivo: ${error.message}`);
-    }
-}
-
-
-// =============================================================================
-// INICIALIZACIÓN
-// =============================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Escuchar eventos personalizados del script.js principal para resultados RMN
-    window.addEventListener('rmnCleanResult', function(event) {
-        if (event.detail && event.detail.type === 'clean_result') {
-            showCleanResult(event.detail);
-        }
-    });
-
-    // Cargar estadísticas iniciales al cargar el DOM
-    loadRMNStats();
-    loadDocumentFiles();
-});
-</script>
+<!-- 3. Script principal (debe ir al final) -->
+<script src="/static/js/main.js"></script>
 
 </body>
 </html>

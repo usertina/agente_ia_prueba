@@ -1,38 +1,138 @@
-// Funciones para la sección de Espectros RMN
+// ========== INICIALIZACIÓN DE LA SECCIÓN RMN ==========
+
+function initializeRMNSection() {
+    const rmnSection = document.getElementById('rmn-section');
+    if (!rmnSection) {
+        console.error('❌ Sección RMN no encontrada');
+        return;
+    }
+
+    rmnSection.innerHTML = `
+        <!-- Estadísticas RMN -->
+        <div id="rmn-stats" class="p-3 bg-teal-50 dark:bg-teal-900 rounded-lg text-sm mb-3">
+            <strong>📊 Estado RMN</strong><br>
+            <span class="text-sm">Espectros: 0 | Limpios: 0 | Gráficos: 0</span>
+        </div>
+
+        <!-- Botones de acción rápida -->
+        <div class="space-y-2 mb-3">
+            <button onclick="showRMNHelp()" 
+                    class="w-full text-left p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+                ❓ Ayuda RMN
+            </button>
+            <button onclick="showRMNMethods()" 
+                    class="w-full text-left p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
+                🔬 Ver Métodos
+            </button>
+            <button onclick="listSpectra()" 
+                    class="w-full text-left p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+                📋 Listar Espectros
+            </button>
+        </div>
+
+        <!-- Upload de espectro -->
+        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📤 Subir Espectro</h4>
+            <input type="file" id="spectrum-file-input" 
+                   accept=".csv,.txt,.dat,.asc,.json" 
+                   class="hidden">
+            <button onclick="document.getElementById('spectrum-file-input').click()" 
+                    class="w-full p-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-colors text-sm mb-2">
+                📁 Seleccionar Archivo
+            </button>
+            <button onclick="uploadSpectrum()" 
+                    class="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+                ⬆️ Subir Espectro
+            </button>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Formatos: CSV, TXT, DAT, ASC, JSON
+            </p>
+        </div>
+
+        <!-- Lista de espectros -->
+        <div class="mb-3">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">🧪 Espectros Disponibles</h4>
+            <div id="spectra-list" class="space-y-2 max-h-60 overflow-y-auto">
+                <p class="text-xs text-gray-500 dark:text-gray-400 italic text-center">No hay espectros subidos</p>
+            </div>
+        </div>
+
+        <!-- Limpieza rápida -->
+        <div class="mb-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-lg">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">⚡ Limpieza Rápida</h4>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="quickCleanAuto()" 
+                        class="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
+                    🤖 Auto
+                </button>
+                <button onclick="quickCleanSavgol()" 
+                        class="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs">
+                    📈 Savgol
+                </button>
+                <button onclick="quickCleanGaussian()" 
+                        class="p-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
+                    🌊 Gaussian
+                </button>
+                <button onclick="quickCleanMedian()" 
+                        class="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-xs">
+                    🎯 Median
+                </button>
+            </div>
+        </div>
+
+        <!-- Espectros limpios -->
+        <div id="cleaned-spectra" class="mb-3">
+            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">✨ Espectros Limpios</h4>
+            <div class="text-xs text-gray-500 dark:text-gray-400 italic text-center">
+                Todavía no hay espectros limpios
+            </div>
+        </div>
+    `;
+
+    const fileInput = document.getElementById('spectrum-file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                console.log('📁 Archivo seleccionado:', this.files[0].name);
+            }
+        });
+    }
+
+    console.log('✅ Sección RMN inicializada');
+}
+
+// ========== FUNCIONES DE TOGGLE Y NAVEGACIÓN ==========
 
 function toggleRMNSection() {
     const section = document.getElementById('rmn-section');
     const toggle = document.getElementById('rmn-toggle');
     
+    if (!section) {
+        console.error('❌ Sección RMN no encontrada');
+        return;
+    }
+    
     if (section.classList.contains('hidden')) {
         section.classList.remove('hidden');
-        toggle.innerHTML = '🧪 Espectros RMN ▼';
+        if (toggle) toggle.innerHTML = '🧪 Espectros RMN ▼';
         loadRMNStats();
+        loadSpectraList();
     } else {
         section.classList.add('hidden');
-        toggle.innerHTML = '🧪 Espectros RMN ▶';
+        if (toggle) toggle.innerHTML = '🧪 Espectros RMN ▶';
     }
 }
 
 function showRMNHelp() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'ayuda rmn';
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand('ayuda rmn');
 }
 
 function showRMNMethods() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'métodos';
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand('métodos');
 }
 
 function listSpectra() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'listar espectros';
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand('listar espectros');
 }
 
 function executeRMNCommand(command) {
@@ -42,38 +142,29 @@ function executeRMNCommand(command) {
     form.dispatchEvent(new Event('submit'));
 }
 
+// ========== FUNCIONES DE LIMPIEZA RÁPIDA ==========
+
 function quickCleanAuto() {
-    // Obtener el último espectro mencionado o pedir al usuario
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `limpiar auto: ${lastSpectrum}`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`limpiar auto: ${lastSpectrum}`);
 }
 
 function quickCleanSavgol() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `limpiar: ${lastSpectrum} con savgol`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`limpiar: ${lastSpectrum} con savgol`);
 }
 
 function quickCleanGaussian() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `limpiar: ${lastSpectrum} con gaussian`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`limpiar: ${lastSpectrum} con gaussian`);
 }
 
 function quickCleanMedian() {
     const lastSpectrum = localStorage.getItem('lastSpectrum') || 'mi_espectro.csv';
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `limpiar: ${lastSpectrum} con median`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`limpiar: ${lastSpectrum} con median`);
 }
+
+// ========== FUNCIONES DE UPLOAD ==========
 
 async function uploadSpectrum() {
     const fileInput = document.getElementById('spectrum-file-input');
@@ -84,7 +175,6 @@ async function uploadSpectrum() {
         return;
     }
 
-    // Validar formato
     const allowedExtensions = ['.csv', '.txt', '.dat', '.asc', '.json'];
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
     
@@ -105,16 +195,9 @@ async function uploadSpectrum() {
         const result = await response.json();
         
         if (result.success) {
-            // Mostrar mensaje de éxito
             alert(`✅ ${result.message}\n💡 ${result.next_step}`);
-            
-            // Guardar último espectro para comandos rápidos
             localStorage.setItem('lastSpectrum', result.filename);
-            
-            // Limpiar input
             fileInput.value = '';
-            
-            // Actualizar lista de espectros
             loadSpectraList();
             loadRMNStats();
         } else {
@@ -124,6 +207,8 @@ async function uploadSpectrum() {
         alert(`❌ Error subiendo espectro: ${error.message}`);
     }
 }
+
+// ========== FUNCIONES DE CARGA DE DATOS ==========
 
 async function loadSpectraList() {
     try {
@@ -149,7 +234,6 @@ async function loadSpectraList() {
                                 class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
                             📥
                         </button>
-                        
                     </div>
                 </div>
             `).join('');
@@ -161,12 +245,32 @@ async function loadSpectraList() {
     }
 }
 
+async function loadRMNStats() {
+    try {
+        const response = await fetch('/files/spectra');
+        const data = await response.json();
+        
+        const statsElement = document.getElementById('rmn-stats');
+        if (statsElement) {
+            const spectraCount = data.spectra ? data.spectra.length : 0;
+            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
+            const plotsCount = data.plots ? data.plots.length : 0;
+            
+            statsElement.innerHTML = `
+                <strong>📊 Estado RMN</strong><br>
+                <span class="text-sm">Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}</span>
+            `;
+        }
+    } catch (error) {
+        console.error('Error cargando estadísticas RMN:', error);
+    }
+}
+
+// ========== FUNCIONES DE ANÁLISIS Y DESCARGA ==========
+
 function analyzeSpectrum(filename) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `analizar: ${filename}`;
     localStorage.setItem('lastSpectrum', filename);
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`analizar: ${filename}`);
 }
 
 async function downloadSpectrum(filename) {
@@ -190,32 +294,12 @@ async function downloadSpectrum(filename) {
     }
 }
 
-async function loadRMNStats() {
-    try {
-        const response = await fetch('/files/spectra');
-        const data = await response.json();
-        
-        const statsElement = document.getElementById('rmn-stats');
-        if (statsElement) {
-            const spectraCount = data.spectra ? data.spectra.length : 0;
-            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
-            const plotsCount = data.plots ? data.plots.length : 0;
-            
-            statsElement.textContent = `Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}`;
-        }
-    } catch (error) {
-        console.error('Error cargando estadísticas RMN:', error);
-    }
-}
-console.log("Result recibido:", result);
+// ========== FUNCIONES DE VISUALIZACIÓN DE RESULTADOS ==========
 
-// -----------------------------
-// Mostrar espectro limpio con descarga
 function showCleanResult(result) {
     const containerId = 'cleaned-spectra';
     let container = document.getElementById(containerId);
 
-    // Si no existe el contenedor, lo creamos
     if (!container) {
         container = document.createElement('div');
         container.id = containerId;
@@ -224,13 +308,11 @@ function showCleanResult(result) {
         rmnSection.appendChild(container);
     }
 
-    // Eliminar mensaje de "Todavía no hay espectros limpios"
     const emptyMsg = container.querySelector('div.text-xs.italic');
     if (emptyMsg) emptyMsg.remove();
 
     const cleanFileName = result.cleaned_file.split('/').pop();
     const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : 'grafico_comparativo.png';
-
     const paramsStr = result.params ? 
         Object.entries(result.params).map(([key, value]) => `${key}: ${value}`).join(', ') : 
         'Parámetros automáticos';
@@ -322,70 +404,28 @@ function showCleanResult(result) {
     `;
 
     container.prepend(entry);
-
-    updateRMNStats();
+    loadRMNStats();
     showNotification('success', `Espectro limpiado: ${cleanFileName}`, 'El archivo está listo para descargar');
 }
 
-// -----------------------------
-// Funciones auxiliares para espectros limpios
-// -----------------------------
-
 function analyzeCleanSpectrum(filename) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `analizar: ${filename}`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`analizar: ${filename}`);
 }
 
 function compareWithOriginal(originalFile, cleanFile) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `comparar: ${originalFile} con ${cleanFile}`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`comparar: ${originalFile} con ${cleanFile}`);
 }
 
 function exportSpectrum(filename, format) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `exportar: ${filename} formato ${format}`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`exportar: ${filename} formato ${format}`);
 }
 
 function showSpectrumDetails(filename) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `detalles: ${filename}`;
-    form.dispatchEvent(new Event('submit'));
+    executeRMNCommand(`detalles: ${filename}`);
 }
 
-// -----------------------------
-// Actualizar estadísticas RMN
-// -----------------------------
-async function updateRMNStats() {
-    try {
-        const response = await fetch('/files/spectra');
-        const data = await response.json();
-        
-        const statsElement = document.getElementById('rmn-stats');
-        if (statsElement) {
-            const spectraCount = data.spectra ? data.spectra.length : 0;
-            const cleanedCount = data.cleaned ? data.cleaned.length : 0;
-            const plotsCount = data.plots ? data.plots.length : 0;
-            
-            statsElement.innerHTML = `
-                <strong>📊 Estado RMN</strong><br>
-                <span class="text-sm">Espectros: ${spectraCount} | Limpios: ${cleanedCount} | Gráficos: ${plotsCount}</span>
-            `;
-        }
-    } catch (error) {
-        console.error('Error actualizando estadísticas RMN:', error);
-    }
-}
+// ========== SISTEMA DE NOTIFICACIONES ==========
 
-// -----------------------------
-// Sistema de notificaciones para espectros
-// -----------------------------
 function showNotification(type, title, message) {
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ${
@@ -408,523 +448,20 @@ function showNotification(type, title, message) {
     
     document.body.appendChild(notification);
     
-    // Auto-remover después de 5 segundos
     setTimeout(() => {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
         }
     }, 5000);
 }
-// Añadir estas funciones al archivo static/js/rmn.js o al script principal
 
-// Función para detectar y manejar resultados de limpieza de espectros
-function handleSpectrumCleaningResult(result, input, tool) {
-    console.log("Procesando resultado de limpieza:", result);
-    
-    // Verificar si es un resultado de limpieza de espectro
-    if (typeof result === 'object' && result.type === 'clean_result') {
-        showCleanSpectrumResult(result);
-        return true;
-    }
-    
-    // También verificar si es un string que contiene información de limpieza
-    if (typeof result === 'string' && result.includes('ESPECTRO LIMPIADO')) {
-        // Intentar extraer información del texto
-        const cleanFileName = extractFileNameFromText(result);
-        if (cleanFileName) {
-            showSimpleCleanResult(cleanFileName, result);
-            return true;
-        }
-    }
-    
-    return false;
-}
+// ========== INICIALIZACIÓN AL CARGAR LA PÁGINA ==========
 
-/* // Función para mostrar resultado completo de limpieza
-function showCleanSpectrumResult(result) {
-    console.log("Mostrando resultado completo:", result);
-    
-    const responseDiv = document.getElementById('response');
-    if (!responseDiv) return;
-    
-    const cleanFileName = result.cleaned_file.split('/').pop();
-    const plotFileName = result.plot_file ? result.plot_file.split('/').pop() : null;
-    
-    const resultHTML = `
-        <div class="spectrum-clean-result bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900 dark:to-blue-900 rounded-lg shadow-md border-l-4 border-green-500 p-4 mb-4">
-            <div class="flex justify-between items-start mb-3">
-                <div class="flex items-center space-x-3">
-                    <div class="text-2xl">🧪</div>
-                    <div>
-                        <div class="text-green-800 dark:text-green-200 font-bold text-lg">ESPECTRO LIMPIADO EXITOSAMENTE</div>
-                        <div class="text-xs text-green-600 dark:text-green-400">
-                            ${new Date().toLocaleString('es-ES')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                <div class="space-y-2">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Archivo original:</span>
-                        <span class="font-mono text-gray-800 dark:text-gray-200 text-xs">${result.original_file}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Archivo limpio:</span>
-                        <span class="font-mono text-green-700 dark:text-green-300 text-xs">${cleanFileName}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Método usado:</span>
-                        <span class="font-semibold text-blue-600 dark:text-blue-400">${result.method}</span>
-                    </div>
-                </div>
-                <div class="space-y-2">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Mejora SNR:</span>
-                        <span class="font-semibold text-green-600 dark:text-green-400">+${result.snr_improvement} dB</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Puntos de datos:</span>
-                        <span class="text-gray-700 dark:text-gray-300">${result.data_points.toLocaleString()}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">Tiempo procesado:</span>
-                        <span class="text-gray-700 dark:text-gray-300">${result.processing_time}s</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2 pt-3 border-t border-green-200 dark:border-green-700">
-                <button onclick="downloadCleanedFile('${cleanFileName}')" 
-                        class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                    📥 Descargar CSV Limpio
-                </button>
-                
-                ${plotFileName ? `
-                <button onclick="downloadPlotFile('${plotFileName}')" 
-                        class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-                    📊 Descargar Gráfico
-                </button>
-                ` : ''}
-
-                <button onclick="analyzeCleanSpectrum('${cleanFileName}')" 
-                        class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
-                    🔍 Analizar Limpio
-                </button>
-
-                <button onclick="compareSpectra('${result.original_file}')" 
-                        class="flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
-                    📊 Comparar Versiones
-                </button>
-            </div>
-
-            <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                💡 El archivo está guardado y listo para descargar. Usa "analizar: ${cleanFileName}" para ver estadísticas detalladas.
-            </div>
-        </div>
-    `;
-    
-    // Insertar al inicio del response div
-    responseDiv.insertAdjacentHTML('afterbegin', resultHTML);
-    
-    // Actualizar estadísticas
-    updateRMNStats();
-    
-    // Mostrar notificación
-    showNotification('success', 'Espectro Limpiado', `${cleanFileName} está listo para descargar`);
-    
-    // Guardar último espectro para comandos rápidos
-    localStorage.setItem('lastSpectrum', result.original_file);
-    localStorage.setItem('lastCleanedSpectrum', cleanFileName);
-}
- */
-// Función para resultado simple (cuando solo tenemos texto)
-function showSimpleCleanResult(fileName, resultText) {
-    const responseDiv = document.getElementById('response');
-    if (!responseDiv) return;
-    
-    const resultHTML = `
-        <div class="spectrum-clean-simple bg-green-50 dark:bg-green-900 rounded-lg border-l-4 border-green-500 p-4 mb-4">
-            <div class="flex items-center space-x-3 mb-3">
-                <div class="text-2xl">🧪</div>
-                <div>
-                    <div class="text-green-800 dark:text-green-200 font-bold">ESPECTRO PROCESADO</div>
-                    <div class="text-xs text-green-600 dark:text-green-400">
-                        ${new Date().toLocaleString('es-ES')}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-sm mb-4 whitespace-pre-wrap">${resultText}</div>
-            
-            <div class="flex flex-wrap gap-2">
-                <button onclick="listCleanedSpectra()" 
-                        class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg">
-                    📋 Ver Espectros Limpios
-                </button>
-                
-                <button onclick="executeRMNCommand('listar espectros')" 
-                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
-                    🔄 Actualizar Lista
-                </button>
-            </div>
-        </div>
-    `;
-    
-    responseDiv.insertAdjacentHTML('afterbegin', resultHTML);
-    updateRMNStats();
-}
-
-// Funciones de descarga
-async function downloadCleanedFile(filename) {
-    try {
-        console.log(`Descargando archivo limpio: ${filename}`);
-        const response = await fetch(`/download/cleaned/${encodeURIComponent(filename)}`);
-        
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            showNotification('success', 'Descarga iniciada', `${filename} descargándose`);
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('Error descargando archivo limpio:', error);
-        showNotification('error', 'Error de descarga', `No se pudo descargar ${filename}: ${error.message}`);
-    }
-}
-
-async function downloadPlotFile(filename) {
-    try {
-        console.log(`Descargando gráfico: ${filename}`);
-        const response = await fetch(`/download/plot/${encodeURIComponent(filename)}`);
-        
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            showNotification('success', 'Gráfico descargado', filename);
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-    } catch (error) {
-        console.error('Error descargando gráfico:', error);
-        showNotification('error', 'Error de descarga', `No se pudo descargar el gráfico: ${error.message}`);
-    }
-}
-
-// Función para listar espectros limpios disponibles
-async function listCleanedSpectra() {
-    try {
-        const response = await fetch('/list/cleaned');
-        const data = await response.json();
-        
-        if (data.success && data.cleaned.length > 0) {
-            let listHTML = '<div class="cleaned-spectra-list mt-4"><h4 class="font-bold mb-2">📋 Espectros Limpios Disponibles:</h4>';
-            
-            data.cleaned.forEach((spectrum, index) => {
-                listHTML += `
-                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border text-xs mb-1">
-                        <div class="flex-1">
-                            <div class="font-semibold text-green-800 dark:text-green-200">${spectrum.name}</div>
-                            <div class="text-gray-600 dark:text-gray-400">${(spectrum.size / 1024).toFixed(1)} KB</div>
-                        </div>
-                        <div class="flex gap-1">
-                            <button onclick="downloadCleanedFile('${spectrum.name}')" 
-                                    class="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs">
-                                📥 Descargar
-                            </button>
-                            <button onclick="analyzeCleanSpectrum('${spectrum.name}')" 
-                                    class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
-                                🔍 Analizar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            listHTML += '</div>';
-            
-            const responseDiv = document.getElementById('response');
-            if (responseDiv) {
-                responseDiv.insertAdjacentHTML('afterbegin', listHTML);
-            }
-        } else {
-            showNotification('info', 'Sin espectros', 'No hay espectros limpios disponibles');
-        }
-    } catch (error) {
-        console.error('Error listando espectros limpios:', error);
-        showNotification('error', 'Error', 'No se pudo obtener la lista de espectros limpios');
-    }
-}
-
-// Función para extraer nombre de archivo del texto de respuesta
-function extractFileNameFromText(text) {
-    const matches = text.match(/([^\/\s]+_clean_\d+\.csv)|([^\/\s]+_[a-zA-Z]+_\d+\.csv)/);
-    return matches ? matches[0] : null;
-}
-
-// Función para comparar espectros (llamada desde botón)
-function compareSpectra(originalFile) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `comparar: ${originalFile}`;
-    form.dispatchEvent(new Event('submit'));
-}
-
-// MODIFICACIÓN IMPORTANTE: Integrar con el sistema de respuestas existente
-// Esta función debe ser llamada desde el manejador principal de respuestas
-
-function integrateSpectrumHandling() {
-    // Interceptar las respuestas del formulario principal
-    const originalHandleResponse = window.handleFormResponse || function() {};
-    
-    window.handleFormResponse = function(data) {
-        console.log("Interceptando respuesta:", data);
-        
-        // Verificar si es una respuesta de limpieza de espectro
-        if (data.result_type === 'text' && typeof data.result_data === 'object' && data.result_data.type === 'clean_result') {
-            handleSpectrumCleaningResult(data.result_data, data.input, data.tool);
-            return;
-        } else if (data.result_type === 'text' && typeof data.result_data === 'string') {
-            // Verificar si el texto indica limpieza de espectro
-            if (handleSpectrumCleaningResult(data.result_data, data.input, data.tool)) {
-                return;
-            }
-        }
-        
-        // Si no es un resultado de espectro, usar el manejador original
-        originalHandleResponse(data);
-    };
-}
-
-// AGREGAR estas funciones al archivo static/js/rmn.js o al script principal
-
-// Función para manejar resultados de análisis
-function handleAnalysisResult(result, input, tool) {
-    console.log("Procesando resultado de análisis:", result);
-    
-    // Verificar si es un resultado de análisis
-    if (typeof result === 'object' && result.type === 'analysis_result') {
-        showAnalysisResult(result);
-        return true;
-    }
-    
-    return false;
-}
-
-// Función para mostrar resultado de análisis
-function showAnalysisResult(result) {
-    console.log("Mostrando resultado de análisis:", result);
-    
-    const responseDiv = document.getElementById('response') || document.getElementById('history');
-    if (!responseDiv) return;
-    
-    const analysis = result.analysis;
-    const stats = result.statistics;
-    
-    const resultHTML = `
-        <div class="analysis-result bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-lg shadow-md border-l-4 border-blue-500 p-4 mb-4">
-            <div class="flex justify-between items-start mb-3">
-                <div class="flex items-center space-x-3">
-                    <div class="text-2xl">🔍</div>
-                    <div>
-                        <div class="text-blue-800 dark:text-blue-200 font-bold text-lg">ANÁLISIS COMPLETADO</div>
-                        <div class="text-xs text-blue-600 dark:text-blue-400">
-                            ${new Date().toLocaleString('es-ES')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                <div class="space-y-2">
-                    <h4 class="font-semibold text-blue-800 dark:text-blue-200">📊 Estadísticas básicas</h4>
-                    <div class="space-y-1">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Archivo:</span>
-                            <span class="font-mono text-gray-800 dark:text-gray-200">${result.filename}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Puntos de datos:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${stats.data_points.toLocaleString()}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Rango frecuencia:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${stats.frequency_range} ppm</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Intensidad máxima:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${stats.intensity_max.toFixed(1)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="space-y-2">
-                    <h4 class="font-semibold text-purple-800 dark:text-purple-200">🔬 Análisis de calidad</h4>
-                    <div class="space-y-1">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">SNR:</span>
-                            <span class="font-semibold ${analysis.snr > 30 ? 'text-green-600' : analysis.snr > 20 ? 'text-yellow-600' : 'text-red-600'}">${analysis.snr.toFixed(1)} dB</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Nivel de ruido:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${analysis.noise_level.toFixed(3)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Deriva línea base:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${analysis.baseline_drift.toFixed(3)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">Picos detectados:</span>
-                            <span class="text-gray-700 dark:text-gray-300">${analysis.peak_count}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-3 mb-4">
-                <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">💡 Recomendaciones</h4>
-                <div class="text-sm text-yellow-700 dark:text-yellow-300">
-                    ${Array.isArray(result.recommendations) ? 
-                        result.recommendations.map(rec => `<div>• ${rec}</div>`).join('') :
-                        result.recommendations || 'Usa limpieza automática para mejores resultados'
-                    }
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2 pt-3 border-t border-blue-200 dark:border-blue-700">
-                ${result.plot_file ? `
-                <a href="${result.plot_url}" download="${result.plot_file}"
-                   class="flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
-                    📊 Descargar Gráfico de Análisis
-                </a>
-                ` : ''}
-                
-                <button onclick="startCleaningProcess('${result.filename}')" 
-                        class="flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                    🧪 Limpiar Espectro Ahora
-                </button>
-
-                <button onclick="listAllPlots()" 
-                        class="flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
-                    📋 Ver Todos los Gráficos
-                </button>
-            </div>
-
-            <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                💡 El gráfico de análisis muestra la calidad del espectro y los picos detectados
-            </div>
-        </div>
-    `;
-    
-    // Insertar al inicio del response div
-    responseDiv.insertAdjacentHTML('afterbegin', resultHTML);
-    
-    // Actualizar estadísticas
-    updateRMNStats();
-    
-    // Mostrar notificación
-    showNotification('success', 'Análisis Completado', `Gráfico de ${result.filename} listo para descargar`);
-    
-    // Guardar último espectro analizado
-    localStorage.setItem('lastAnalyzedSpectrum', result.filename);
-}
-
-// Función para iniciar proceso de limpieza desde el análisis
-function startCleaningProcess(filename) {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `limpiar auto: ${filename}`;
-    form.dispatchEvent(new Event('submit'));
-}
-
-// Función para listar todos los gráficos
-async function listAllPlots() {
-    try {
-        const response = await fetch('/list/analysis');
-        const data = await response.json();
-        
-        if (data.success && data.analysis_plots.length > 0) {
-            let listHTML = '<div class="analysis-plots-list mt-4"><h4 class="font-bold mb-2">📊 Gráficos de Análisis Disponibles:</h4>';
-            
-            data.analysis_plots.forEach((plot, index) => {
-                listHTML += `
-                    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded border text-xs mb-1">
-                        <div class="flex-1">
-                            <div class="font-semibold text-blue-800 dark:text-blue-200">${plot.name}</div>
-                            <div class="text-gray-600 dark:text-gray-400">${(plot.size / 1024).toFixed(1)} KB</div>
-                        </div>
-                        <div class="flex gap-1">
-                            <a href="/download/analysis/${encodeURIComponent(plot.name)}" 
-                               download="${plot.name}"
-                               class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs">
-                                📥 Descargar
-                            </a>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            listHTML += '</div>';
-            
-            const responseDiv = document.getElementById('response') || document.getElementById('history');
-            if (responseDiv) {
-                responseDiv.insertAdjacentHTML('afterbegin', listHTML);
-            }
-        } else {
-            showNotification('info', 'Sin gráficos', 'No hay gráficos de análisis disponibles');
-        }
-    } catch (error) {
-        console.error('Error listando gráficos de análisis:', error);
-        showNotification('error', 'Error', 'No se pudo obtener la lista de gráficos');
-    }
-}
-
-// Modificar la función principal de manejo de respuestas para incluir análisis
 document.addEventListener('DOMContentLoaded', function() {
-    // Interceptar respuestas del backend para detectar resultados de análisis
-    window.addEventListener('analysisResult', function(event) {
-        if (event.detail && event.detail.type === 'analysis_result') {
-            showAnalysisResult(event.detail);
-        }
-    });
-    
-    // También interceptar en el sistema principal de respuestas
-    const originalHandleResponse = window.handleFormResponse || function() {};
-    
-    window.handleFormResponse = function(data) {
-        console.log("Interceptando respuesta para análisis:", data);
-        
-        // Verificar si es una respuesta de análisis
-        if (data.result_type === 'text' && typeof data.result_data === 'object' && data.result_data.type === 'analysis_result') {
-            handleAnalysisResult(data.result_data, data.input, data.tool);
-            return;
-        }
-        
-        // Si no es análisis, usar el manejador original
-        originalHandleResponse(data);
-    };
+    initializeRMNSection();
+    loadRMNStats();
+    loadSpectraList();
+    console.log('✅ Sistema de espectros RMN inicializado');
 });
 
-// Inicializar la integración cuando se carga la página
-document.addEventListener('DOMContentLoaded', function() {
-    integrateSpectrumHandling();
-    console.log("Sistema de manejo de espectros RMN integrado");
-});
+console.log('🧪 Módulo RMN cargado');
