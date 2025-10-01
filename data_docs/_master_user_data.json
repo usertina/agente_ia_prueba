@@ -18,7 +18,8 @@
     "email": "info@qubiz.team",
     "web": "www.qubiz.team",
     "sector": "Investigación de nanotecnología",
-    "codigo_nace": "72.19"
+    "codigo_nace": "72.19",
+    "actividad_economica": "Investigación cuántica"
   },
    "representante": {
     "nombre_completo": "Jorge de la Herran y Crespo",
@@ -43,7 +44,7 @@
     "titulo_proyecto": "Detección cuántica de PFAS en tiempo real",
     "sector_productivo": "Investigación de nanotecnología - Detección cuántica",
     "actividad_economica": "72.19 - Investigación y desarrollo experimental",
-    "antecedentes": "",
+    "antecedentes": "Nuestra empresa cuenta con amplia experiencia en el desarrollo de soluciones para la Detección de PFAS",
     "descripcion_general": "Detección de PFAS en tiempo real en el agua",
     "difusion_resultados": "Conseguir que se detecten a nivel microscópico las PFAS",
     "estrategia_mercado": "Conseguir subvenciones",
@@ -51,6 +52,6 @@
     "calidad_metodologia": "buena",
     "planificacion": "A largo plazo hacer la sensórica cuantica más accesible",
     "duracion": "12 meses",
-    "estructura_trabajo": "Quimicos,Fisicos"
+    "estructura_trabajo": "PT1: Análisis, PT2: Desarrollo"
     }
 }

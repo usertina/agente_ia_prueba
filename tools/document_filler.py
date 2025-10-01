@@ -352,7 +352,7 @@ class DocumentFiller:
             backup_file = self.user_database_file.replace('.json', '_backup.json')
             with open(backup_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-                    
+
             return True
         except Exception as e:
             print(f"Error guardando base de datos: {e}")
@@ -531,7 +531,32 @@ class DocumentFiller:
         return value if value else None
 
     # ============= RELLENADO AUTOMÁTICO PRINCIPAL =============
-    
+    # Agregar este método a la clase DocumentFiller en document_filler.py
+# Busca la función auto_fill_with_database y actualiza la parte de detección de campos
+
+    def normalize_field_name(self, field_name: str) -> str:
+        """
+        Normaliza nombres de campos eliminando prefijos comunes
+        Ej: 'Completar titulo_proyecto' -> 'titulo_proyecto'
+        """
+        field_normalized = field_name.strip()
+        
+        # Eliminar prefijos comunes
+        prefixes_to_remove = [
+            'Completar ',
+            'completar ',
+            'COMPLETAR ',
+            'Rellenar ',
+            'rellenar ',
+        ]
+        
+        for prefix in prefixes_to_remove:
+            if field_normalized.startswith(prefix):
+                field_normalized = field_normalized[len(prefix):]
+                break
+        
+        return field_normalized
+
     def auto_fill_with_database(self, filename: str) -> str:
         """Rellena plantilla automáticamente con base de datos maestra"""
         try:
@@ -545,7 +570,7 @@ class DocumentFiller:
             # 2. Detectar campos
             campos_necesarios = set()
             campos_necesarios.update(re.findall(r'\{\{(\w+)\}\}', text_content))
-            campos_necesarios.update(re.findall(r'\[(\w+)\]', text_content))
+            campos_necesarios.update(re.findall(r'\[([^\]]+)\]', text_content))  # ✅ CAMBIADO: Captura todo dentro de []
             campos_necesarios.update(re.findall(r'_(\w+)_', text_content))
             
             if not campos_necesarios:
@@ -553,18 +578,23 @@ class DocumentFiller:
             
             print(f"📋 Campos detectados: {campos_necesarios}")
             
-            # 3. Mapear campos a datos reales
+            # 3. Normalizar y mapear campos a datos reales
             datos_mapeados = {}
             campos_sin_mapear = []
             
             for campo in campos_necesarios:
-                valor = self.smart_field_mapping(campo, filename)  # ✅ Pasar filename
+                # ✅ NUEVO: Normalizar el campo antes de buscar
+                campo_normalizado = self.normalize_field_name(campo)
+                print(f"🔄 Campo original: '{campo}' → normalizado: '{campo_normalizado}'")
+                
+                valor = self.smart_field_mapping(campo_normalizado, filename)
                 
                 if valor:
+                    # Guardar con el nombre ORIGINAL del campo (para el reemplazo)
                     datos_mapeados[campo] = valor
                     print(f"✅ {campo} → {valor[:50]}...")
                 else:
-                    campos_sin_mapear.append(campo)
+                    campos_sin_mapear.append(campo_normalizado)
                     print(f"⚠️ {campo} → No encontrado en BD")
             
             # 4. Completar campos faltantes con IA
@@ -575,10 +605,16 @@ class DocumentFiller:
                     campos_sin_mapear,
                     filename
                 )
-                datos_mapeados.update(datos_ia)
+                # Mapear de vuelta a los nombres originales
+                for campo in campos_necesarios:
+                    campo_norm = self.normalize_field_name(campo)
+                    if campo_norm in datos_ia:
+                        datos_mapeados[campo] = datos_ia[campo_norm]
             
             # 5. Agregar fecha
             datos_mapeados['fecha'] = datetime.now().strftime("%d/%m/%Y")
+            # También agregar con formato "Completar fecha" por si acaso
+            datos_mapeados['Completar fecha'] = datetime.now().strftime("%d/%m/%Y")
             
             # 6. Rellenar documento
             output_name = f"{filename.split('.')[0]}_filled_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -596,18 +632,18 @@ class DocumentFiller:
             desde_ia = len(campos_sin_mapear)
             
             reporte = f"""
-✅ **DOCUMENTO GENERADO AUTOMÁTICAMENTE**
+    ✅ **DOCUMENTO GENERADO AUTOMÁTICAMENTE**
 
-📄 **Archivo:** {output_name}.{'docx' if filename.endswith('.docx') else 'txt'}
-📁 **Ubicación:** {OUTPUT_DIR}/
+    📄 **Archivo:** {output_name}.{'docx' if filename.endswith('.docx') else 'txt'}
+    📁 **Ubicación:** {OUTPUT_DIR}/
 
-📊 **Estadísticas:**
-   • Total de campos: {total_campos}
-   • Desde base de datos: {desde_bd} ({desde_bd/total_campos*100:.0f}%)
-   • Completados con IA: {desde_ia} ({desde_ia/total_campos*100:.0f}%)
+    📊 **Estadísticas:**
+    • Total de campos: {total_campos}
+    • Desde base de datos: {desde_bd} ({desde_bd/total_campos*100:.0f}%)
+    • Completados con IA: {desde_ia} ({desde_ia/total_campos*100:.0f}%)
 
-💡 **Campos usados de tu base de datos:**
-"""
+    💡 **Campos usados de tu base de datos:**
+    """
             
             for campo, valor in list(datos_mapeados.items())[:10]:
                 if campo not in campos_sin_mapear:

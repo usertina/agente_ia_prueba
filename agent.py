@@ -1,15 +1,42 @@
+
 import importlib
+import json
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
 import re
+
 
 # Cargar variables del archivo .env
 load_dotenv()
 
 # Configurar Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash")
+# Usar modelo válido en API actual
+try:
+    model = genai.GenerativeModel("gemini-1.5-flash-latest")
+except Exception:
+    model = genai.GenerativeModel("gemini-1.5-pro-latest")
+
+# Función para obtener el mapeo desde un archivo JSON
+def obtener_mapeo(nombre_mapeo: str) -> str:
+    try:
+        # Ruta correcta hacia la carpeta mappings_docs
+        mapeo_path = os.path.join("mappings_docs", nombre_mapeo)
+
+        # Depuración
+        print(f"📝 Buscando archivo en: {mapeo_path}")
+
+        # Abrir el archivo
+        with open(mapeo_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        return json.dumps(data, indent=4)
+
+    except FileNotFoundError:
+        return f"❌ Error: El mapeo {nombre_mapeo} no se encuentra disponible en la carpeta 'mappings_docs'."
+    except json.JSONDecodeError:
+        return "❌ Error al leer el archivo de mapeo. Verifique el formato."
 
 # Herramientas disponibles
 TOOLS = {
@@ -48,6 +75,9 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "listar espectros": "rmn_spectrum_cleaner",
         "listar plantillas": "document_filler",
         "listar datos": "document_filler",
+        "listar mapeos": "document_filler",
+        "ver mapeo:": "document_filler",
+        "crear mapeo:": "document_filler",
         "status": "notifications",
         "debug": "notifications",
         "resumen": "notifications",
@@ -75,7 +105,8 @@ def ask_gemini_for_tool(prompt: str) -> str:
         "plantilla", "plantillas",
         "rellenar:", "analizar plantilla",
         "crear ejemplo datos", "usar plantilla:",
-        "convertir a json"
+        "convertir a json",
+        "ver mapeo:"
     ]
     
     print(f"📄 Verificando DOCUMENTOS...")
@@ -175,6 +206,11 @@ Responde SOLO el nombre de la herramienta."""
 
 
 def use_tool(tool_name: str, data: str) -> str:
+
+    if tool_name == "document_filler" and "ver mapeo:" in data.lower():
+        nombre_mapeo = data.split(":")[1].strip()  # Extraer el nombre del mapeo
+        return obtener_mapeo(nombre_mapeo)  # Devolver el contenido del mapeo
+
     if tool_name not in TOOLS:
         return f"No existe la herramienta {tool_name}"
     try:
