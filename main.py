@@ -147,62 +147,120 @@ class CommandHandler:
         """Procesa un comando y retorna respuesta estructurada"""
         user_input_strip = user_input.strip().lower()
         
-        # Comandos de notas
-        if user_input_strip in ["leer", "borrar", "descargar", "contar"] or \
-           user_input_strip.startswith("guardar:") or user_input_strip.startswith("buscar:"):
+        # ============================================================
+        # COMANDOS EXACTOS Y ESPECÍFICOS (MÁXIMA PRIORIDAD)
+        # ============================================================
+        
+        # Comandos de notas (exactos)
+        if user_input_strip in ["leer", "borrar", "descargar", "contar"]:
             tool = "note"
             result = use_tool(tool, user_input)
             return {"tool": tool, "result": result}
         
-        # Comandos de notificaciones
-        elif any(keyword in user_input_strip for keyword in [
-            "status", "start", "stop", "iniciar", "detener", "test", "probar",
-            "activar emails", "activar patentes", "activar papers", "debug",
-            "resumen", "listar"
-        ]) or user_input_strip.startswith("keywords") or user_input_strip.startswith("categories:") or user_input_strip.startswith("borrar"):
+        # Comandos de notas con prefijo
+        if user_input_strip.startswith("guardar:") or user_input_strip.startswith("buscar:"):
+            tool = "note"
+            result = use_tool(tool, user_input)
+            return {"tool": tool, "result": result}
+        
+        # ============================================================
+        # COMANDOS DE DOCUMENTOS (ANTES QUE NOTIFICACIONES)
+        # ============================================================
+        
+        if any(phrase in user_input_strip for phrase in [
+            "listar plantillas",
+            "listar datos", 
+            "plantilla",
+            "rellenar:",
+            "analizar plantilla",
+            "crear ejemplo datos",
+            "usar plantilla:",
+            "convertir a json"
+        ]):
+            tool = "document_filler"
+            result = use_tool(tool, user_input)
+            return {"tool": tool, "result": result}
+        
+        # ============================================================
+        # COMANDOS DE RMN (ANTES QUE NOTIFICACIONES)
+        # ============================================================
+        
+        if any(phrase in user_input_strip for phrase in [
+            "listar espectros",
+            "limpiar:", "analizar:", "comparar:", "exportar:",
+            "espectro", "espectros",
+            "limpiar auto:",
+            "métodos rmn"
+        ]):
+            tool = "rmn_spectrum_cleaner"
+            from tools.rmn_spectrum_cleaner import rmn_cleaner
+            result = rmn_cleaner.run(user_input)
+            return {"tool": tool, "result": result}
+        
+        # ============================================================
+        # COMANDOS DE NOTIFICACIONES (SOLO MUY ESPECÍFICOS)
+        # ============================================================
+        
+        # Solo comandos exactos o muy específicos de notificaciones
+        if (user_input_strip in ["status", "debug", "test", "probar", "resumen", "start", "iniciar", "stop", "detener"]) or \
+        any(phrase in user_input_strip for phrase in [
+            "listar notificaciones",
+            "listar papers",
+            "listar patentes", 
+            "listar emails",
+            "activar emails",
+            "activar patentes",
+            "activar papers",
+            "desactivar emails",
+            "desactivar patentes",
+            "desactivar papers"
+        ]) or \
+        user_input_strip.startswith("keywords") or \
+        user_input_strip.startswith("categories:") or \
+        user_input_strip.startswith("borrar notif"):
+            
             tool = "notifications"
             import tools.notifications as notif_tool
             notif_tool.set_current_user_id(user_id)
             result = notif_tool.run(user_input)
             return {"tool": tool, "result": result}
         
-        # Comandos de generación de código
-        elif any(keyword in user_input_strip for keyword in ["generar", "genera", "crear codigo"]):
+        # ============================================================
+        # COMANDOS DE GENERACIÓN DE CÓDIGO
+        # ============================================================
+        
+        if any(keyword in user_input_strip for keyword in ["generar", "genera", "crear codigo"]):
             tool = "code_gen"
             result = use_tool(tool, user_input)
             return {"tool": tool, "result": result}
         
-        # Comandos RMN
-        elif any(cmd in user_input_strip for cmd in ["limpiar:", "analizar:", "comparar:", "exportar:"]):
-            tool = "rmn_spectrum_cleaner"
-            result = rmn_cleaner.run(user_input)
-            return {"tool": tool, "result": result}
+        # ============================================================
+        # FALLBACK: Usar ask_gemini_for_tool
+        # ============================================================
         
-        # Usar Gemini para elegir herramienta
-        else:
-            tool = ask_gemini_for_tool(user_input)
-            print(f"🔧 Gemini eligió herramienta: {tool}")
-            
-            if tool == "notifications":
-                import tools.notifications as notif_tool
-                notif_tool.set_current_user_id(user_id)
-            
-            result = use_tool(tool, user_input)
-            return {"tool": tool, "result": result}
+        # Si no coincide con ningún comando específico, usar el sistema de detección
+        tool = ask_gemini_for_tool(user_input)
+        print(f"🔧 Gemini eligió herramienta: {tool}")
+        
+        if tool == "notifications":
+            import tools.notifications as notif_tool
+            notif_tool.set_current_user_id(user_id)
+        
+        result = use_tool(tool, user_input)
+        return {"tool": tool, "result": result}    
+    # ============= SERVICE WORKER =============
 
-# ============= SERVICE WORKER =============
-
-@app.get("/sw.js")
-async def service_worker():
-    """Sirve el Service Worker desde la raíz para registro correcto"""
-    return FileResponse(
-        "static/sw.js", 
-        media_type="application/javascript",
-        headers={
-            "Service-Worker-Allowed": "/",
-            "Cache-Control": "no-cache"
-        }
-    )
+    @app.get("/sw.js")
+    async def service_worker():
+        """Sirve el Service Worker desde la raíz para registro correcto"""
+        return FileResponse(
+            "static/sw.js", 
+            media_type="application/javascript",
+            headers={
+                "Service-Worker-Allowed": "/",
+                "Cache-Control": "no-cache"
+            }
+        )
 
 # ============= GESTORES DE ARCHIVOS =============
 

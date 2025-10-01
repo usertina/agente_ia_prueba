@@ -14,19 +14,23 @@ function initializeDocumentSection() {
             <span class="text-sm">Plantillas: 0 | Datos: 0 | Generados: 0</span>
         </div>
 
-        <!-- Botones de ayuda -->
+                <!-- Botones de ayuda -->
         <div class="space-y-2 mb-3">
-            <button onclick="showDocumentHelp()" 
-                    class="w-full text-left p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
-                ❓ Ayuda Documentos
+            <button onclick="autoFillQuick()" 
+                    class="w-full text-left p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 font-bold shadow-lg">
+                ⚡ RELLENAR AUTOMÁTICO
             </button>
-            <button onclick="listTemplates()" 
+            <button onclick="showUserDatabase()" 
                     class="w-full text-left p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
-                📋 Listar Plantillas
+                🗄️ Ver Mi Base de Datos
             </button>
-            <button onclick="listDataFiles()" 
-                    class="w-full text-left p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
-                📊 Listar Datos
+            <button onclick="configureDatabase()" 
+                    class="w-full text-left p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+                ⚙️ Configurar Mis Datos
+            </button>
+            <button onclick="showDocumentHelp()" 
+                    class="w-full text-left p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm">
+                ❓ Ayuda
             </button>
         </div>
 
@@ -338,6 +342,70 @@ function formatDate(timestamp) {
 document.addEventListener('DOMContentLoaded', function() {
     initializeDocumentSection();
     console.log('📄 Sistema de documentos inicializado');
+});
+
+// ========== NUEVAS FUNCIONES DE AUTORELLENADO ==========
+
+window.autoFillQuick = function() {
+    const templates = currentDocumentFiles.templates;
+    
+    if (templates.length === 0) {
+        alert('⚠️ No hay plantillas disponibles.\n\n1. Sube una plantilla primero\n2. Luego usa este botón');
+        return;
+    }
+    
+    let templateName;
+    
+    if (templates.length === 1) {
+        templateName = templates[0].name;
+    } else {
+        const opciones = templates.map((t, i) => `${i+1}. ${t.name}`).join('\n');
+        templateName = prompt(`🎯 Selecciona plantilla para rellenar:\n\n${opciones}\n\nEscribe el nombre completo:`);
+        
+        if (!templateName) return;
+    }
+    
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = `rellenar auto: ${templateName}`;
+    form.dispatchEvent(new Event('submit'));
+    
+    // Mostrar mensaje de carga
+    const loading = document.createElement('div');
+    loading.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse';
+    loading.innerHTML = `
+        <div class="flex items-center">
+            <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>⚡ Generando documento automáticamente...</span>
+        </div>
+    `;
+    document.body.appendChild(loading);
+    
+    setTimeout(() => {
+        if (loading.parentElement) loading.remove();
+    }, 5000);
+};
+
+window.showUserDatabase = function() {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = 'ver datos';
+    form.dispatchEvent(new Event('submit'));
+};
+
+window.configureDatabase = function() {
+    const input = document.getElementById('user_input');
+    const form = document.getElementById('commandForm');
+    input.value = 'configurar datos';
+    form.dispatchEvent(new Event('submit'));
+};
+
+// Actualizar cuando se detecte un documento generado
+window.addEventListener('documentGenerated', function() {
+    loadDocumentFiles();
 });
 
 console.log('📄 Módulo de documentos cargado');

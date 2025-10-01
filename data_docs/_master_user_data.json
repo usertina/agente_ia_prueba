@@ -1,0 +1,56 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "created": "2025-10-01T11:02:47.602828",
+    "last_updated": "2025-10-01T11:02:47.602868",
+    "description": "Base de datos maestra del usuario/empresa"
+  },
+   "empresa": {
+    "nombre": "Qubiz.Team",
+    "nombre_completo": "QUBIZ TEAM S.L.",
+    "nombre_comercial": "Qubiz.Team",
+    "cif": "B12345678",
+    "direccion": "B Accelerator Tower, Gran Vía Don Diego López de Haro, 1, 8⁰",
+    "ciudad": "Bilbao",
+    "provincia": "Vizcaya",
+    "codigo_postal": "48001",
+    "telefono": "688 69 70 33",
+    "email": "info@qubiz.team",
+    "web": "www.qubiz.team",
+    "sector": "Investigación de nanotecnología",
+    "codigo_nace": "72.19"
+  },
+   "representante": {
+    "nombre_completo": "Jorge de la Herran y Crespo",
+    "cargo": "Presidente",
+    "dni": "30574686G",
+    "telefono": "+34 688 697 033",
+    "email": "jorge.delaherran@qubiz.team"
+  },
+  "bancarios": {
+    "banco": "Banco Ejemplo",
+    "iban": "ES91 2100 0418 4502 0005 1332",
+    "swift": "CAIXESBBXXX"
+  },
+  "proyectos": {
+    "principal": "Desarrollo de software innovador",
+    "descripcion": "Soluciones tecnológicas avanzadas para empresas",
+    "objetivo": "Mejorar la eficiencia empresarial mediante tecnología",
+    "presupuesto": "75.000 €",
+    "duracion": "12 meses"
+  },
+    "proyecto_redes": {
+    "titulo_proyecto": "Detección cuántica de PFAS en tiempo real",
+    "sector_productivo": "Investigación de nanotecnología - Detección cuántica",
+    "actividad_economica": "72.19 - Investigación y desarrollo experimental",
+    "antecedentes": "",
+    "descripcion_general": "Detección de PFAS en tiempo real en el agua",
+    "difusion_resultados": "Conseguir que se detecten a nivel microscópico las PFAS",
+    "estrategia_mercado": "Conseguir subvenciones",
+    "grado_innovacion": "el grado de innovación es algo importante",
+    "calidad_metodologia": "buena",
+    "planificacion": "A largo plazo hacer la sensórica cuantica más accesible",
+    "duracion": "12 meses",
+    "estructura_trabajo": "Quimicos,Fisicos"
+    }
+}

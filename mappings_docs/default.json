@@ -1,0 +1,45 @@
+{
+  "_metadata": {
+    "name": "Mapeo por defecto",
+    "description": "Mapeos genéricos",
+    "version": "1.0"
+  },
+  "mappings": {
+    "empresa": [
+      "empresa.nombre"
+    ],
+    "razon_social": [
+      "empresa.nombre_completo"
+    ],
+    "cif": [
+      "empresa.cif"
+    ],
+    "nif": [
+      "empresa.cif"
+    ],
+    "direccion": [
+      "empresa.direccion"
+    ],
+    "ciudad": [
+      "empresa.ciudad"
+    ],
+    "telefono": [
+      "empresa.telefono"
+    ],
+    "email": [
+      "empresa.email"
+    ],
+    "representante": [
+      "representante.nombre_completo"
+    ],
+    "cargo": [
+      "representante.cargo"
+    ],
+    "dni": [
+      "representante.dni"
+    ],
+    "fecha": [
+      "_current_date"
+    ]
+  }
+}

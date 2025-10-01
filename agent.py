@@ -26,134 +26,152 @@ TOOLS = {
 }
 
 def ask_gemini_for_tool(prompt: str) -> str:
-    prompt_lower = prompt.lower()  # <-- definir al inicio
+    prompt_lower = prompt.lower().strip()
+    
+    print(f"\n{'='*60}")
+    print(f"🔍 DEBUGGING ask_gemini_for_tool")
+    print(f"📝 Prompt original: '{prompt}'")
+    print(f"📝 Prompt lower: '{prompt_lower}'")
+    print(f"{'='*60}\n")
 
-    # Si el prompt es una URL, usar web_open automáticamente
+    # URLs
     url_pattern = r"(https?://[^\s]+)"
     if re.match(url_pattern, prompt.strip()):
+        print("✅ DETECTADO: URL → web_open")
         return "web_open"
     
-     # Detección específica por patrón de archivo científico
-    scientific_file_patterns = [
-        r'mz\d+.*\.csv',  # Archivos tipo MZ0031_algo.csv
-        r'.*_array.*\.csv',  # Archivos con _array_
-        r'.*_cut.*\.csv',    # Archivos con _cut
-        r'.*pfos.*\.csv',    # Archivos con pfos
-        r'.*pfas.*\.csv',    # Archivos con pfas
+    # ============================================================
+    # COMANDOS EXACTOS (DICCIONARIO)
+    # ============================================================
+    
+    exact_commands = {
+        "listar espectros": "rmn_spectrum_cleaner",
+        "listar plantillas": "document_filler",
+        "listar datos": "document_filler",
+        "status": "notifications",
+        "debug": "notifications",
+        "resumen": "notifications",
+        "test": "notifications",
+        "ayudas buscar": "ayudas_manager",
+    }
+    
+    print(f"🔍 Verificando comandos exactos...")
+    if prompt_lower in exact_commands:
+        result = exact_commands[prompt_lower]
+        print(f"✅ MATCH EXACTO: '{prompt_lower}' → {result}")
+        return result
+    else:
+        print(f"❌ No hay match exacto para: '{prompt_lower}'")
+    
+    # ============================================================
+    # DETECCIÓN POR FRASES (ORDEN ESTRICTO)
+    # ============================================================
+    
+    print(f"\n🔍 Verificando frases específicas...\n")
+    
+    # 1. DOCUMENTOS
+    document_phrases = [
+        "listar plantillas", "listar datos",
+        "plantilla", "plantillas",
+        "rellenar:", "analizar plantilla",
+        "crear ejemplo datos", "usar plantilla:",
+        "convertir a json"
     ]
     
-    for pattern in scientific_file_patterns:
-        if re.search(pattern, prompt_lower) and any(cmd in prompt_lower for cmd in ["analizar", "limpiar", "comparar"]):
+    print(f"📄 Verificando DOCUMENTOS...")
+    for phrase in document_phrases:
+        if phrase in prompt_lower:
+            print(f"✅ MATCH: '{phrase}' encontrada → document_filler")
+            return "document_filler"
+    print(f"❌ No match en documentos")
+    
+    # 2. RMN
+    rmn_phrases = [
+        "listar espectros",
+        "espectro", "espectros",
+        "analizar:", "limpiar:", "comparar:", "exportar:",
+        "savgol", "gaussian", "mediana",
+        "línea base", "snr", "ppm"
+    ]
+    
+    print(f"🧪 Verificando RMN...")
+    for phrase in rmn_phrases:
+        if phrase in prompt_lower:
+            print(f"✅ MATCH: '{phrase}' encontrada → rmn_spectrum_cleaner")
             return "rmn_spectrum_cleaner"
+    print(f"❌ No match en RMN")
     
-    # Si el prompt contiene "analizar:" seguido de .csv, probablemente es espectro
-    if "analizar:" in prompt_lower and ".csv" in prompt_lower:
-        return "rmn_spectrum_cleaner"
-
-    # Palabras clave de generación de código
-    code_gen_keywords = [
-        "generar", "genera", "crear", "crea", "escribir", "escribe",
-        "codigo", "código", "script", "programa", "función", "funcion",
-        "algoritmo", "clase", "app", "aplicación", "aplicacion"
-    ]
-
-    # Palabras clave de notificaciones (completa)
-    notification_keywords = [
-        # Comandos de listado
-        "listar", "listar 10", "listar 20", "listar papers", "listar patentes", "listar patents",
-        "ver", "mostrar", "ver recientes", "últimas", "últimos", "recientes",
-        # Comandos de gestión
-        "resumen", "desglose", "borrar", "eliminar", "borrar papers", "eliminar papers",
-        "borrar todo", "eliminar todo", "limpiar", "reset", "clear",
-        # Tipos de notificación
-        "papers", "patentes", "emails", "notificaciones", "tipo", "tipos",
-        # Identificadores y referencias
-        "ID", "id", "identificador", "ref", "referencia",
-        # Acciones generales
-        "gestionar", "administrar", "control", "verificar", "consultar",
-        # Otros términos relacionados
-        "notificacion", "notificación", "alerta", "avisar", "aviso",
-        "email", "correo", "patente", "paper", "científico",
-        "monitoreo", "notificar", "activar", "keywords", "categories",
-        "status", "estado", "test", "probar"
-    ]
-
-    # Palabras clave de documentos
-    document_keywords = [
-        "plantilla", "rellenar", "documento", "formulario",
-        "listar plantillas", "listar datos", "analizar",
-        "crear ejemplo", "ayuda", "subvencion", "subvención",
-        "document_filler", "plantillas", "datos", "rellenar:"
-    ]
-
-   # En agent.py, reemplaza la sección de rmn_keywords con esto:
-
-    # Palabras clave de espectros RMN - EXPANDIDA
-    rmn_keywords = [
-        # RMN tradicional
-        "rmn", "espectro", "espectros", "resonancia magnética", "resonancia magnetica",
-        "ruido", "limpiar espectro", "filtrar", "savgol", "gaussian", "mediana",
-        "wiener", "línea base", "linea base", "snr", "señal ruido",
-        "ppm", "intensidad", "picos", "analizar espectro", "limpiar auto",
-        "comparar espectro", "exportar espectro", "nmr", "spectrum", "noise",
-        "baseline", "peaks", "chemical shift", "listar espectros",
-    
-        # Análisis químico y contaminantes - NUEVO
-        "pfos", "pfas", "contaminante", "contaminantes", "array", "cutref",
-        "cromatografia", "cromatografía", "espectrometria", "espectrometría",
-        "masas", "gc-ms", "lc-ms", "hplc", "uplc", "mz",
-    
-        # Detección más específica para archivos de datos
-        "_array_", "_cut", "_ref", "datos analíticos", "datos analiticos",
-        "procesar datos", "limpiar datos", "filtrar datos"
-    ]
-
-    # Palabras clave de ayudas/subvenciones
-    ayudas_keywords = [
-        "ayudas", "ayuda", "subvención", "subvenciones", "subvencion",
-        "beca", "becas", "financiación", "financiacion", "fondos",
-        "convocatoria", "convocatorias", "euskadi", "gipuzkoa",
-        "spri", "europea", "next generation", "bdns"
+    # 3. AYUDAS
+    ayudas_phrases = [
+        "ayudas buscar", "ayudas filtrar", "ayudas activar",
+        "subvención", "subvenciones", "beca", "becas",
+        "convocatoria", "financiación"
     ]
     
-    if any(keyword in prompt_lower for keyword in ayudas_keywords):
-        return "ayudas_manager"
+    print(f"💶 Verificando AYUDAS...")
+    for phrase in ayudas_phrases:
+        if phrase in prompt_lower:
+            print(f"✅ MATCH: '{phrase}' encontrada → ayudas_manager")
+            return "ayudas_manager"
+    print(f"❌ No match en ayudas")
     
-
-    # Revisar espectros RMN PRIMERO (nueva herramienta)
-    if any(keyword in prompt_lower for keyword in rmn_keywords):
-        return "rmn_spectrum_cleaner"
-
-    # Revisar documentos SEGUNDO (antes que notificaciones para evitar conflictos)
-    if any(keyword in prompt_lower for keyword in document_keywords):
-        return "document_filler"
-
-    # Revisar notificaciones
-    if any(keyword in prompt_lower for keyword in notification_keywords):
-        return "notifications"
-
-    # Revisar generación de código
-    if any(keyword in prompt_lower for keyword in code_gen_keywords):
-        if "||" not in prompt or prompt_lower.startswith("generar") or prompt_lower.startswith("genera"):
-            return "code_gen"
-
-    # Revisar guardar código existente
-    if "||" in prompt and not any(keyword in prompt_lower for keyword in code_gen_keywords):
+    # 4. NOTIFICACIONES (solo muy específicas)
+    notification_phrases = [
+        "listar notificaciones",
+        "listar papers", "listar patentes", "listar emails",
+        "activar emails", "activar patentes", "activar papers",
+        "keywords patentes:", "keywords papers:",
+        "borrar notificaciones"
+    ]
+    
+    print(f"🔔 Verificando NOTIFICACIONES...")
+    for phrase in notification_phrases:
+        if phrase in prompt_lower:
+            print(f"✅ MATCH: '{phrase}' encontrada → notifications")
+            return "notifications"
+    print(f"❌ No match en notificaciones")
+    
+    # 5. CÓDIGO
+    if any(k in prompt_lower for k in ["generar", "genera", "crear codigo"]):
+        print(f"✅ MATCH: generación código → code_gen")
+        return "code_gen"
+    
+    if "||" in prompt:
+        print(f"✅ MATCH: formato || → save_code")
         return "save_code"
-
-    # Preguntar a Gemini si no aplica ninguna regla
+    
+    # ============================================================
+    # FALLBACK: Gemini
+    # ============================================================
+    
+    print(f"\n⚠️ NO HAY MATCH → Preguntando a Gemini...")
+    
     tools_list = ", ".join(TOOLS.keys())
-    question = (
-        f"Elige una de estas herramientas: {tools_list}, "
-        f"para resolver: {prompt}. "
-        f"Si necesita generar/crear código usa 'code_gen'. "
-        f"Si es para guardar código existente usa 'save_code'. "
-        f"Si es para documentos/plantillas usa 'document_filler'. "
-        f"Si es para espectros RMN o análisis químico usa 'rmn_spectrum_cleaner'. "
-        f"Responde SOLO con el nombre exacto de la herramienta."
-    )
-    response = model.generate_content(question)
-    return response.text.strip().lower()
+    question = f"""Comando del usuario: "{prompt}"
+
+Herramientas: {tools_list}
+
+Si menciona "plantillas" o "datos" → document_filler
+Si menciona "espectros" o "RMN" → rmn_spectrum_cleaner
+Si menciona "ayudas" o "subvenciones" → ayudas_manager
+Si menciona "notificaciones" o "papers" → notifications
+
+Responde SOLO el nombre de la herramienta."""
+    
+    try:
+        response = model.generate_content(question)
+        result = response.text.strip().lower().replace('"', '').replace("'", '').replace('.', '')
+        print(f"🤖 Gemini eligió: {result}")
+        
+        if result in TOOLS:
+            return result
+        else:
+            print(f"⚠️ Gemini devolvió inválido: {result} → usando notifications")
+            return "notifications"  # Fallback
+            
+    except Exception as e:
+        print(f"❌ Error Gemini: {e} → usando notifications")
+        return "notifications"
 
 
 def use_tool(tool_name: str, data: str) -> str:

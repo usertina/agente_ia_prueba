@@ -104,12 +104,21 @@ function updateNotificationStatus(userId = null) {
         const permission = Notification.permission === 'granted' ? '✅' : 
                           Notification.permission === 'denied' ? '❌' : '⚠️';
         
-        statusEl.innerHTML = `${permission} Usuario: ${userId.substring(0, 8)}...<br>`;
-        statusEl.innerHTML += `<span class="text-xs">Permisos: ${Notification.permission}</span>`;
+        // CAMBIO: Mostrar ID completo truncado más claramente
+        statusEl.innerHTML = `
+            <strong>🆔 Usuario:</strong> ${userId.substring(0, 12)}...<br>
+            <span class="text-xs">Permisos: ${permission} ${Notification.permission}</span>
+        `;
         
-        console.log('✅ Estado actualizado:', { userId: userId.substring(0, 8), permission: Notification.permission });
+        console.log('✅ Estado actualizado:', { 
+            userId: userId.substring(0, 12), 
+            permission: Notification.permission 
+        });
     } else {
-        statusEl.innerHTML = 'Estado: ⏳ Iniciando...<br><span class="text-xs">Esperando registro...</span>';
+        statusEl.innerHTML = `
+            <strong>Estado:</strong> ⏳ Iniciando...<br>
+            <span class="text-xs">Esperando registro...</span>
+        `;
     }
     
     // Actualizar estado del Service Worker
@@ -117,14 +126,11 @@ function updateNotificationStatus(userId = null) {
         if ('serviceWorker' in navigator) {
             if (navigator.serviceWorker.controller) {
                 swStatusEl.textContent = 'Service Worker: ✅ Activo';
-                console.log('✅ Service Worker activo');
             } else {
                 swStatusEl.textContent = 'Service Worker: ⏳ Registrando...';
-                console.log('⏳ Service Worker registrando...');
             }
         } else {
             swStatusEl.textContent = 'Service Worker: ❌ No soportado';
-            console.warn('❌ Service Worker no soportado');
         }
     }
     
@@ -145,7 +151,6 @@ function updateNotificationBadge() {
     }
 }
 
-// Inicializa el sistema de notificaciones
 async function initializeNotificationSystem() {
     console.log('🔔 Inicializando sistema de notificaciones...');
     
@@ -157,8 +162,6 @@ async function initializeNotificationSystem() {
         if (window.registerServiceWorker) {
             console.log('📝 Registrando Service Worker...');
             await window.registerServiceWorker();
-        } else {
-            console.warn('⚠️ registerServiceWorker no disponible');
         }
 
         // 3. Registrar usuario en el backend
@@ -186,28 +189,24 @@ async function initializeNotificationSystem() {
         window.userId = data.user_id;
         console.log(`✅ Usuario registrado: ${window.userId.substring(0, 12)}...`);
         
-        // 5. Cargar historial de notificaciones existente
-        await loadNotificationHistory();
-        
-        // 6. FORZAR actualización de UI inmediatamente
+        // 5. FORZAR actualización de UI INMEDIATAMENTE con userId
         updateNotificationStatus(window.userId);
+        
+        // 6. Cargar historial de notificaciones
+        await loadNotificationHistory();
         
         // 7. Solicitar permisos de notificación
         console.log('🔔 Solicitando permisos de notificación...');
         const hasPermission = await requestNotificationPermission();
         
-        // 8. FORZAR actualización de UI después de permisos
-        setTimeout(() => {
-            updateNotificationStatus(window.userId);
-        }, 500);
+        // 8. Actualizar UI después de permisos
+        updateNotificationStatus(window.userId);
         
         if (hasPermission) {
             console.log('✅ Permisos concedidos');
-        } else {
-            console.warn('⚠️ Permisos no concedidos, pero el sistema seguirá funcionando');
         }
 
-        // 9. Iniciar polling en Service Worker (si está disponible)
+        // 9. Iniciar polling en Service Worker
         if (window.startServiceWorkerPolling && window.userId) {
             console.log('🔄 Iniciando polling en Service Worker...');
             await window.startServiceWorkerPolling(window.userId);
@@ -219,16 +218,15 @@ async function initializeNotificationSystem() {
             startNotificationPolling();
         }
 
-        // 11. Actualizar estado final múltiples veces para asegurar
-        updateNotificationStatus(window.userId);
-        setTimeout(() => updateNotificationStatus(window.userId), 1000);
-        setTimeout(() => updateNotificationStatus(window.userId), 3000);
+        // 11. Actualizaciones finales múltiples para asegurar
+        setTimeout(() => updateNotificationStatus(window.userId), 500);
+        setTimeout(() => updateNotificationStatus(window.userId), 1500);
         
         console.log('✅ Sistema de notificaciones inicializado completamente');
 
     } catch (error) {
         console.error("❌ Error inicializando notificaciones:", error);
-        updateNotificationStatus();
+        updateNotificationStatus();  // Mostrar error
         
         // Reintentar después de 5 segundos
         console.log('🔄 Reintentando en 5 segundos...');

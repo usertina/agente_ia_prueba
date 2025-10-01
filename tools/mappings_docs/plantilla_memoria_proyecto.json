@@ -1,0 +1,24 @@
+{
+  "_metadata": {
+    "name": "Memoria Red.es IA",
+    "description": "Mapeo para plantilla_memoria_proyecto.docx",
+    "template_pattern": ".*plantilla_memoria.*|.*memoria.*proyecto.*",
+    "version": "1.0"
+  },
+  "mappings": {
+    "razon_social": ["empresa.nombre_completo"],
+    "nif": ["empresa.cif"],
+    "actividad_economica": ["proyecto_redes.actividad_economica"],
+    "titulo_proyecto": ["proyecto_redes.titulo_proyecto"],
+    "sector_productivo": ["proyecto_redes.sector_productivo"],
+    "antecedentes": ["proyecto_redes.antecedentes"],
+    "descripcion_general": ["proyecto_redes.descripcion_general"],
+    "difusion_resultados": ["proyecto_redes.difusion_resultados"],
+    "estrategia_mercado": ["proyecto_redes.estrategia_mercado"],
+    "grado_innovacion": ["proyecto_redes.grado_innovacion"],
+    "calidad_metodologia": ["proyecto_redes.calidad_metodologia"],
+    "planificacion": ["proyecto_redes.planificacion"],
+    "duracion": ["proyecto_redes.duracion"],
+    "estructura_trabajo": ["proyecto_redes.estructura_trabajo"]
+  }
+}

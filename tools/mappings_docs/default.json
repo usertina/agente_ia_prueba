@@ -1,0 +1,39 @@
+{
+  "_metadata": {
+    "name": "Mapeo por defecto",
+    "description": "Mapeos genéricos para cualquier documento",
+    "version": "1.0"
+  },
+  "mappings": {
+    "empresa": ["empresa.nombre"],
+    "mi_empresa": ["empresa.nombre"],
+    "nombre_empresa": ["empresa.nombre"],
+    "razon_social": ["empresa.nombre_completo"],
+    "cif": ["empresa.cif"],
+    "nif": ["empresa.cif"],
+    "direccion": ["empresa.direccion"],
+    "ciudad": ["empresa.ciudad"],
+    "provincia": ["empresa.provincia"],
+    "codigo_postal": ["empresa.codigo_postal"],
+    "telefono": ["empresa.telefono"],
+    "email": ["empresa.email"],
+    "web": ["empresa.web"],
+    "sector": ["empresa.sector"],
+    
+    "representante": ["representante.nombre_completo"],
+    "nombre_representante": ["representante.nombre_completo"],
+    "cargo": ["representante.cargo"],
+    "dni": ["representante.dni"],
+    
+    "iban": ["bancarios.iban"],
+    "banco": ["bancarios.banco"],
+    
+    "proyecto": ["proyectos.principal"],
+    "descripcion": ["proyectos.descripcion"],
+    "objetivo": ["proyectos.objetivo"],
+    "presupuesto": ["proyectos.presupuesto"],
+    "duracion": ["proyectos.duracion"],
+    
+    "fecha": ["_current_date"]
+  }
+}
