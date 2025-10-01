@@ -6,6 +6,11 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import io
+import json
+from docx import Document
+
+
 import schedule
 import uvicorn
 from dotenv import load_dotenv
@@ -439,33 +444,29 @@ async def get_files():
 
 # ============= ENDPOINTS DE DOCUMENTOS =============
 
+from fastapi import UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
+import os
+import io
+import json
+from docx import Document
+
 @app.post("/upload/template")
 async def upload_template(file: UploadFile = File(...)):
     """Sube plantilla de documento"""
-    result = await FileManager.upload_file(
-        file, 
-        DIRECTORIES["TEMPLATES_DIR"],
-        ['.docx', '.txt', '.pdf']
-    )
-    
-    if result["success"]:
-        result["next_step"] = f"Analiza la plantilla con: 'analizar: {file.filename}'"
-    
-    return JSONResponse(result)
-
-@app.post("/upload/data")
-async def upload_data(file: UploadFile = File(...)):
-    """Sube archivo de datos"""
-    result = await FileManager.upload_file(
-        file,
-        DIRECTORIES["DATA_DIR"],
-        ['.json', '.csv', '.xlsx', '.txt']
-    )
-    
-    if result["success"]:
-        result["next_step"] = f"Usa: 'rellenar: plantilla.docx con {file.filename}'"
-    
-    return JSONResponse(result)
+    try:
+        result = await FileManager.upload_file(
+            file, 
+            DIRECTORIES["TEMPLATES_DIR"],
+            ['.docx', '.txt', '.pdf']
+        )
+        
+        if result["success"]:
+            result["next_step"] = f"Analiza la plantilla con: 'analizar: {file.filename}'"
+        
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/files/documents")
 async def get_document_files():
@@ -501,23 +502,104 @@ async def get_document_files():
             "error": str(e)
         })
 
-@app.delete("/delete/template/{filename}")
-async def delete_template(filename: str):
-    """Elimina plantilla"""
-    result = await FileManager.delete_file(DIRECTORIES["TEMPLATES_DIR"], filename)
-    return JSONResponse(result, status_code=200 if result["success"] else 404)
+@app.post("/fill/template")
+async def fill_template(template_filename: str):
+    """Rellena la plantilla automáticamente con datos predeterminados"""
+    try:
+        # Leer la plantilla subida
+        template_file_path = os.path.join(DIRECTORIES["TEMPLATES_DIR"], template_filename)
+        with open(template_file_path, 'rb') as template_file:
+            # Analizar plantilla y rellenarla
+            filled_document = await process_template_with_master_data(template_file)
+        
+        # Guardar el documento generado
+        output_file_path = os.path.join(DIRECTORIES["OUTPUT_DIR"], f"filled_{template_filename}")
+        with open(output_file_path, 'wb') as output_file:
+            output_file.write(filled_document)
+        
+        return JSONResponse({
+            "success": True,
+            "message": f"Plantilla {template_filename} rellena correctamente.",
+            "output_file": f"filled_{template_filename}"
+        })
+    
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
-@app.delete("/delete/data/{filename}")
-async def delete_data_file(filename: str):
-    """Elimina archivo de datos"""
-    result = await FileManager.delete_file(DIRECTORIES["DATA_DIR"], filename)
-    return JSONResponse(result, status_code=200 if result["success"] else 404)
+async def process_template_with_master_data(template_file):
+    """Analiza la plantilla y la rellena con datos del archivo maestro"""
+    
+    # Cargar datos del archivo maestro (_master_user_data.json)
+    master_data = load_master_data()
+
+    # Procesar el tipo de plantilla (docx, pdf, etc.)
+    if template_file.name.endswith(".docx"):
+        # Procesar documento .docx
+        return await fill_docx_template(template_file, master_data)
+
+def load_master_data():
+    """Carga los datos del archivo maestro (_master_user_data.json)"""
+    master_data_path = os.path.join(DIRECTORIES["DATA_DIR"], "_master_user_data.json")
+    try:
+        with open(master_data_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Archivo maestro no encontrado")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Error al leer el archivo maestro")
+
+async def fill_docx_template(template_file, master_data):
+    """Rellena una plantilla .docx con los datos del archivo maestro"""
+    doc = Document(template_file)
+
+    # Buscar campos en el documento y reemplazarlos con los datos
+    for para in doc.paragraphs:
+        if "{empresa.nombre}" in para.text:
+            para.text = para.text.replace("{empresa.nombre}", master_data['empresa']['nombre'])
+        if "{representante.nombre_completo}" in para.text:
+            para.text = para.text.replace("{representante.nombre_completo}", master_data['representante']['nombre_completo'])
+        # Continuar con más campos a reemplazar según sea necesario
+
+    # Guardar el documento rellenado
+    output = io.BytesIO()
+    doc.save(output)
+    return output.getvalue()
+
 
 @app.delete("/delete/output/{filename}")
 async def delete_output_file(filename: str):
     """Elimina documento generado"""
-    result = await FileManager.delete_file(DIRECTORIES["OUTPUT_DIR"], filename)
-    return JSONResponse(result, status_code=200 if result["success"] else 404)
+    file_path = os.path.join(DIRECTORIES["OUTPUT_DIR"], filename)
+    
+    if os.path.exists(file_path):
+        result = await FileManager.delete_file(DIRECTORIES["OUTPUT_DIR"], filename)
+        return JSONResponse(result, status_code=200 if result["success"] else 404)
+    else:
+        return JSONResponse({
+            "success": False,
+            "error": "El archivo no se encuentra."
+        }, status_code=404)
+    
+import os
+
+@app.delete("/delete/template/{filename}")
+async def delete_template(filename: str):
+    """Elimina plantilla"""
+    file_path = os.path.join(DIRECTORIES["TEMPLATES_DIR"], filename)
+    
+    if os.path.exists(file_path):
+        result = await FileManager.delete_file(DIRECTORIES["TEMPLATES_DIR"], filename)
+        return JSONResponse(result, status_code=200 if result["success"] else 404)
+    else:
+        return JSONResponse({
+            "success": False,
+            "error": f"El archivo '{filename}' no se encuentra en la carpeta de plantillas."
+        }, status_code=404)
+
+
 
 # ============= ENDPOINTS DE ESPECTROS RMN =============
 

@@ -293,3 +293,50 @@ body.dark-mode .notification-clickable:hover {
         opacity: .5;
     }
 }
+/* === MEJORAS RESPONSIVE ADICIONALES === */
+
+/* Mejorar scroll en móviles */
+@media (max-width: 768px) {
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    /* Mejorar táctil en botones */
+    button, a {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+    
+    /* Inputs más grandes en móvil */
+    input[type="text"],
+    input[type="file"],
+    select,
+    textarea {
+        font-size: 16px !important; /* Evita zoom en iOS */
+    }
+    
+    /* Modales ocupan casi toda la pantalla en móvil */
+    #guide-keywords-modal > div:last-child,
+    #notification-history-modal > div > div {
+        max-height: 95vh;
+    }
+}
+
+/* Tablets */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container {
+        max-width: 100%;
+    }
+}
+
+/* Desktop grande */
+@media (min-width: 1280px) {
+    .container {
+        max-width: 1400px;
+    }
+}

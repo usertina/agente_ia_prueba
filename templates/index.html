@@ -2,261 +2,307 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Agente Gemini</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: 'class' }
     </script>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Mejoras responsive adicionales */
+        @media (max-width: 768px) {
+            .mobile-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                max-height: 50vh;
+                overflow-y: auto;
+                z-index: 40;
+                transform: translateY(calc(100% - 60px));
+                transition: transform 0.3s ease;
+            }
+            
+            .mobile-panel.open {
+                transform: translateY(0);
+            }
+            
+            .mobile-toggle {
+                display: flex;
+                cursor: pointer;
+                padding: 1rem;
+                background: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,1));
+                border-top: 2px solid #e5e7eb;
+            }
+            
+            .dark .mobile-toggle {
+                background: linear-gradient(to bottom, rgba(31,41,55,0.95), rgba(31,41,55,1));
+                border-top-color: #374151;
+            }
+            
+            .mobile-content-push {
+                padding-bottom: 70px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-toggle {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
 
-<div class="container mx-auto p-4 md:p-8 flex flex-col md:flex-row h-screen">
+<div class="container mx-auto p-2 sm:p-4 md:p-8 flex flex-col md:flex-row min-h-screen">
 
-    <div class="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col mr-0 md:mr-6 mb-6 md:mb-0 transition-colors duration-300">
+    <!-- Área principal de contenido -->
+    <div class="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-3 sm:p-6 flex flex-col mr-0 md:mr-6 mb-0 md:mb-0 transition-colors duration-300 mobile-content-push">
 
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400">🤖 Agente Gemini</h1>
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4 sm:mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">🤖 Agente Gemini</h1>
             <div class="flex items-center space-x-2">
                 <button id="guide-button" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none hover:ring-2 ring-blue-500">❓</button>
                 <button id="theme-toggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none hover:ring-2 ring-blue-500">
                     <span id="theme-icon">🌙</span>
                 </button>
+                <!-- Toggle panel móvil (solo visible en móvil) -->
+                <button id="mobile-panel-toggle" class="md:hidden p-2 rounded-full bg-blue-600 text-white focus:outline-none">
+                    📊
+                </button>
             </div>
         </div>
 
-        <div id="content-area" class="flex-1 overflow-y-auto scrollbar-hide">
-            <div id="history" class="space-y-4"></div>
+        <!-- Área de historial con scroll -->
+        <div id="content-area" class="flex-1 overflow-y-auto scrollbar-hide mb-4">
+            <div id="history" class="space-y-3 sm:space-y-4"></div>
         </div>
 
+        <!-- Indicador de carga -->
         <div id="loading-indicator" class="hidden text-center py-2">
             <div class="text-blue-600 dark:text-blue-400">🤖 Procesando...</div>
         </div>
 
-        <div class="mt-6">
-            <form id="commandForm" class="flex space-x-2">
+        <!-- Formulario de entrada -->
+        <div class="mt-auto">
+            <form id="commandForm" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <input type="text" id="user_input" placeholder="Escribe tu comando aquí..." 
-                        class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
-                                 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
-                                 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
-                <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
+                        class="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                               bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm sm:text-base
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
+                <button type="submit" class="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300">
                     Enviar
                 </button>
             </form>
         </div>
     </div>
 
-    <div class="w-full md:w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors duration-300 overflow-y-auto scrollbar-hide">
-        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
-
-        <!-- SECCIÓN DE NOTIFICACIONES MEJORADA -->
-        <div id="notifications-section" class="mb-4">
-            <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                <span>🔔 Notificaciones</span>
-                <span id="notification-badge" class="hidden bg-red-500 text-white text-xs px-2 py-1 rounded-full">0</span>
-            </h3>
-            
-            <div class="mb-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-1" id="notification-status">
-                    Estado: Iniciando...
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400" id="service-worker-status">
-                    Service Worker: Verificando...
-                </p>
-            </div>
-            
-            <div class="space-y-2">
-                <button onclick="testNotifications()" 
-                        class="w-full p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-sm">
-                    🧪 Probar Notificaciones
-                </button>
-                <button onclick="configureNotifications()" 
-                        class="w-full p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors text-sm">
-                    ⚙️ Configurar
-                </button>
-                <button onclick="requestNotificationPermission()" 
-                        class="w-full p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-sm">
-                    🔔 Activar Permisos
-                </button>
-                <button onclick="toggleNotificationHistory()" 
-                        class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors text-sm">
-                    📋 Ver Historial
-                </button>
-                <button onclick="debugNotifications()" 
-                        class="w-full p-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors text-sm">
-                    🐛 Debug Sistema
-                </button>
+    <!-- Panel lateral (responsive) -->
+    <div id="side-panel" class="mobile-panel w-full md:w-80 bg-white dark:bg-gray-800 rounded-t-xl md:rounded-xl shadow-lg transition-colors duration-300">
+        
+        <!-- Toggle para móvil -->
+        <div class="mobile-toggle md:hidden" onclick="toggleMobilePanel()">
+            <div class="flex-1 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
+                <span id="panel-arrow" class="text-2xl transform transition-transform duration-300">▼</span>
             </div>
         </div>
 
-        <div class="mb-6">
-            <h3 class="font-semibold text-lg text-gray-700 dark:text-gray-300 mb-3">📁 Archivos Guardados</h3>
-            
-            <div class="mb-4">
-                <h4 class="font-medium text-gray-600 dark:text-gray-400 mb-2">💻 Código</h4>
-                <div id="code-files-list">
-                    <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
+        <!-- Contenido del panel -->
+        <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(50vh-60px)] md:max-h-full">
+            <h2 class="hidden md:block text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">📊 Panel de Control</h2>
+
+            <!-- SECCIÓN DE NOTIFICACIONES -->
+            <div id="notifications-section" class="mb-4">
+                <h3 class="font-semibold text-base sm:text-lg text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                    <span>🔔 Notificaciones</span>
+                    <span id="notification-badge" class="hidden bg-red-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                </h3>
+                
+                <div class="mb-2 p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-1" id="notification-status">
+                        Estado: Iniciando...
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" id="service-worker-status">
+                        Service Worker: Verificando...
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="testNotifications()" 
+                            class="p-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors text-xs sm:text-sm">
+                        🧪 Probar
+                    </button>
+                    <button onclick="configureNotifications()" 
+                            class="p-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-lg transition-colors text-xs sm:text-sm">
+                        ⚙️ Config
+                    </button>
+                    <button onclick="requestNotificationPermission()" 
+                            class="p-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors text-xs sm:text-sm">
+                        🔔 Permisos
+                    </button>
+                    <button onclick="toggleNotificationHistory()" 
+                            class="p-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors text-xs sm:text-sm">
+                        📋 Historial
+                    </button>
                 </div>
             </div>
 
-            <div class="mb-4">
-                <button id="ayudas-toggle" onclick="toggleAyudasSection()" 
-                         class="w-full p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium">
-                    💶 Ayudas y Subvenciones ▶
-                </button>
+            <!-- Archivos guardados -->
+            <div class="mb-4 sm:mb-6">
+                <h3 class="font-semibold text-base sm:text-lg text-gray-700 dark:text-gray-300 mb-3">📁 Archivos</h3>
+                
+                <div class="mb-3 sm:mb-4">
+                    <h4 class="font-medium text-sm text-gray-600 dark:text-gray-400 mb-2">💻 Código</h4>
+                    <div id="code-files-list">
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Botones de secciones colapsables -->
+                <div class="space-y-2">
+                    <button id="ayudas-toggle" onclick="toggleAyudasSection()" 
+                             class="w-full p-2 sm:p-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-medium text-sm">
+                        💶 Ayudas ▶
+                    </button>
+
+                    <button id="rmn-toggle" onclick="toggleRMNSection()" 
+                             class="w-full p-2 sm:p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-300 font-medium text-sm">
+                        🧪 Espectros RMN ▶
+                    </button>
+
+                    <button id="document-toggle" onclick="toggleDocumentSection()" 
+                             class="w-full p-2 sm:p-3 bg-gradient-to-r from-orange-500 to-yellow-600 text-white rounded-lg hover:from-orange-600 hover:to-yellow-700 transition-all duration-300 font-medium text-sm">
+                        📄 Documentos ▶
+                    </button>
+                </div>
+
+                <!-- Secciones colapsables -->
+                <div id="ayudas-section" class="hidden space-y-2 sm:space-y-3 mt-2"></div>
+                <div id="rmn-section" class="hidden space-y-2 sm:space-y-3 mt-2"></div>
+                <div id="document-section" class="hidden space-y-2 sm:space-y-3 mt-2"></div>
+
+                <div id="notes-section" class="mt-3 sm:mt-4">
+                    <h4 class="font-medium text-sm text-gray-600 dark:text-gray-400 mb-2">📝 Notas</h4>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
+                </div>
             </div>
-
-            <div id="ayudas-section" class="hidden space-y-3 mb-4">
-                <!-- Contenido de ayudas cargado por ayudas.js -->
-            </div>
-
-            <div id="notes-section">
-                <h4 class="font-medium text-gray-600 dark:text-gray-400 mb-2">📝 Notas</h4>
-                <p class="text-sm text-gray-500 dark:text-gray-400 italic text-center">Cargando...</p>
-            </div>
-        </div>
-
-        <div class="mb-4">
-            <button id="rmn-toggle" onclick="toggleRMNSection()" 
-                     class="w-full p-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-300 font-medium">
-                🧪 Espectros RMN ▶
-            </button>
-        </div>
-
-        <div id="rmn-section" class="hidden space-y-3 mb-4">
-            <!-- Contenido RMN cargado por rmn.js -->
-        </div>
-
-        <div class="mb-4">
-            <button id="document-toggle" onclick="toggleDocumentSection()" 
-                     class="w-full p-3 bg-gradient-to-r from-orange-500 to-yellow-600 text-white rounded-lg hover:from-orange-600 hover:to-yellow-700 transition-all duration-300 font-medium">
-                📄 Documentos ▶
-            </button>
-        </div>
-
-        <div id="document-section" class="hidden space-y-3 mb-4">
-            <!-- Contenido documentos cargado por document.js -->
         </div>
     </div>
 </div>
 
-<!-- Modal de Guía -->
-<div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+<!-- Modal de Guía (responsive) -->
+<div id="guide-keywords-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
     <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 sm:p-6 z-50 max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso</h2>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200">📘 Guía de Uso</h2>
             <button id="close-guide-keywords-modal" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
         </div>
 
-        <div class="mb-4 flex space-x-2">
-            <button class="tab-button active px-4 py-2 bg-blue-100 dark:bg-blue-700 rounded-xl focus:outline-none" data-tab="tools">Herramientas</button>
-            <button class="tab-button px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-xl focus:outline-none" data-tab="keywords">Palabras Clave</button>
+        <div class="mb-4 flex space-x-2 overflow-x-auto">
+            <button class="tab-button active px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-700 rounded-xl focus:outline-none text-sm whitespace-nowrap" data-tab="tools">Herramientas</button>
+            <button class="tab-button px-3 sm:px-4 py-2 bg-gray-100 dark:bg-gray-600 rounded-xl focus:outline-none text-sm whitespace-nowrap" data-tab="keywords">Palabras Clave</button>
         </div>
 
-        <div id="tab-tools" class="tab-content">
-            <!-- Contenido de herramientas -->
-        </div>
-
-        <div id="tab-keywords" class="tab-content hidden">
-            <!-- Contenido de palabras clave -->
-        </div>
+        <div id="tab-tools" class="tab-content"></div>
+        <div id="tab-keywords" class="tab-content hidden"></div>
     </div>
 </div>
 
-<!-- MODAL DE HISTORIAL DE NOTIFICACIONES -->
+<!-- Modal de Historial de Notificaciones (responsive) -->
 <div id="notification-history-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="flex items-center justify-center min-h-screen p-2 sm:p-4">
         <div class="fixed inset-0 bg-black opacity-50" onclick="toggleNotificationHistory()"></div>
         
-        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <!-- Header -->
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            📋 Historial de Notificaciones
+                        <h2 class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            📋 Historial
                         </h2>
-                        <span id="history-badge" class="ml-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">0</span>
+                        <span id="history-badge" class="ml-2 sm:ml-3 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">0</span>
                     </div>
                     <button onclick="toggleNotificationHistory()" 
                             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
                 
-                <!-- Filtros -->
-                <div class="mt-4 flex flex-wrap gap-2">
-                    <button onclick="filterNotifications('all')" 
-                            class="filter-button active bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors" 
-                            data-filter="all">
-                        Todas
-                    </button>
-                    <button onclick="filterNotifications('papers')" 
-                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
-                            data-filter="papers">
-                        📚 Papers
-                    </button>
-                    <button onclick="filterNotifications('patents')" 
-                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
-                            data-filter="patents">
-                        🔬 Patentes
-                    </button>
-                    <button onclick="filterNotifications('emails')" 
-                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
-                            data-filter="emails">
-                        📧 Emails
-                    </button>
-                    <button onclick="filterNotifications('ayudas')" 
-                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
-                            data-filter="ayudas">
-                        💶 Ayudas
-                    </button>
-                    <button onclick="filterNotifications('test')" 
-                            class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600" 
-                            data-filter="test">
-                        🧪 Test
-                    </button>
+                <!-- Filtros (scroll horizontal en móvil) -->
+                <div class="mt-3 sm:mt-4 flex flex-wrap gap-2 overflow-x-auto">
+                    <button onclick="filterNotifications('all')" class="filter-button active bg-blue-600 text-white px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap" data-filter="all">Todas</button>
+                    <button onclick="filterNotifications('papers')" class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600 whitespace-nowrap" data-filter="papers">📚 Papers</button>
+                    <button onclick="filterNotifications('patents')" class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600 whitespace-nowrap" data-filter="patents">🔬 Patentes</button>
+                    <button onclick="filterNotifications('emails')" class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600 whitespace-nowrap" data-filter="emails">📧 Emails</button>
+                    <button onclick="filterNotifications('ayudas')" class="filter-button bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600 whitespace-nowrap" data-filter="ayudas">💶 Ayudas</button>
                 </div>
                 
                 <!-- Acciones -->
-                <div class="mt-3 flex gap-2">
-                    <button onclick="markAllAsRead()" 
-                            class="text-xs px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors">
-                        ✅ Marcar todas como leídas
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button onclick="markAllAsRead()" class="text-xs px-2 sm:px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded transition-colors">
+                        ✅ Marcar leídas
                     </button>
-                    <button onclick="clearNotificationHistory()" 
-                            class="text-xs px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition-colors">
-                        🗑️ Limpiar historial
+                    <button onclick="clearNotificationHistory()" class="text-xs px-2 sm:px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded transition-colors">
+                        🗑️ Limpiar
                     </button>
                 </div>
             </div>
             
-            <!-- Lista de notificaciones -->
-            <div id="notification-history" class="flex-1 overflow-y-auto p-4">
+            <div id="notification-history" class="flex-1 overflow-y-auto p-3 sm:p-4">
                 <div class="text-center p-8 text-gray-500 dark:text-gray-400">
                     <p class="text-lg">📭</p>
-                    <p class="mt-2">Cargando notificaciones...</p>
+                    <p class="mt-2 text-sm">Cargando notificaciones...</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Script para toggle del panel móvil -->
+<script>
+function toggleMobilePanel() {
+    const panel = document.getElementById('side-panel');
+    const arrow = document.getElementById('panel-arrow');
+    
+    if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        panel.classList.add('open');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+// Toggle desde el botón del header en móvil
+document.getElementById('mobile-panel-toggle')?.addEventListener('click', toggleMobilePanel);
+
+// Cerrar panel al hacer click fuera en móvil
+document.addEventListener('click', (e) => {
+    const panel = document.getElementById('side-panel');
+    const toggle = document.getElementById('mobile-panel-toggle');
+    
+    if (window.innerWidth <= 768 && 
+        panel.classList.contains('open') && 
+        !panel.contains(e.target) && 
+        !toggle?.contains(e.target)) {
+        toggleMobilePanel();
+    }
+});
+</script>
+
 <!-- Scripts - ORDEN IMPORTANTE -->
 <script src="/static/js/service-worker-registration.js"></script>
-
-<!-- 1. Helpers y utilidades -->
 <script src="/static/js/ui-helpers.js"></script>
-
-<!-- 2. Módulos de funcionalidad -->
 <script src="/static/js/tema.js"></script>
 <script src="/static/js/guia.js"></script>
 <script src="/static/js/notifications.js"></script>
@@ -265,29 +311,18 @@
 <script src="/static/js/ayudas.js"></script>
 <script src="/static/js/rmn.js"></script>
 <script src="/static/js/document.js"></script>
-
-<!-- 3. Script principal (debe ir al final) -->
 <script type="module" src="/static/js/main.js"></script>
 
-<!-- 4. Script para toggle del modal de historial -->
 <script>
-// Toggle del modal de historial de notificaciones
 function toggleNotificationHistory() {
     const modal = document.getElementById('notification-history-modal');
-    if (!modal) {
-        console.error('Modal de historial no encontrado');
-        return;
-    }
+    if (!modal) return;
     
     if (modal.classList.contains('hidden')) {
         modal.classList.remove('hidden');
-        
-        // Recargar historial al abrir
         if (window.loadNotificationHistory) {
             window.loadNotificationHistory();
         }
-        
-        // Actualizar badge con el total
         const badge = document.getElementById('history-badge');
         if (badge && window.notificationHistory) {
             badge.textContent = window.notificationHistory.length || 0;
@@ -297,7 +332,6 @@ function toggleNotificationHistory() {
     }
 }
 
-// Asegurar que la función esté disponible globalmente
 window.toggleNotificationHistory = toggleNotificationHistory;
 </script>
 
