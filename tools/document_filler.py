@@ -618,6 +618,8 @@ class DocumentFiller:
             
             # 6. Rellenar documento
             output_name = f"{filename.split('.')[0]}_filled_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            extension = 'docx' if filename.endswith('.docx') else 'txt'
+            output_filename = f"{output_name}.{extension}"  # ✅ NUEVO: nombre completo del archivo
             
             if filename.endswith('.docx'):
                 result = self.fill_docx(file_path, datos_mapeados, output_name)
@@ -626,41 +628,33 @@ class DocumentFiller:
             else:
                 return "❌ Formato no soportado. Solo DOCX y TXT"
             
-            # 7. Generar reporte
+            # 7. Generar estadísticas
             total_campos = len(campos_necesarios)
             desde_bd = total_campos - len(campos_sin_mapear)
             desde_ia = len(campos_sin_mapear)
             
-            reporte = f"""
-    ✅ **DOCUMENTO GENERADO AUTOMÁTICAMENTE**
-
-    📄 **Archivo:** {output_name}.{'docx' if filename.endswith('.docx') else 'txt'}
-    📁 **Ubicación:** {OUTPUT_DIR}/
-
-    📊 **Estadísticas:**
-    • Total de campos: {total_campos}
-    • Desde base de datos: {desde_bd} ({desde_bd/total_campos*100:.0f}%)
-    • Completados con IA: {desde_ia} ({desde_ia/total_campos*100:.0f}%)
-
-    💡 **Campos usados de tu base de datos:**
-    """
-            
-            for campo, valor in list(datos_mapeados.items())[:10]:
-                if campo not in campos_sin_mapear:
-                    valor_truncado = str(valor)[:50] + '...' if len(str(valor)) > 50 else str(valor)
-                    reporte += f"   • {campo}: {valor_truncado}\n"
-            
-            if campos_sin_mapear:
-                reporte += f"\n⚠️ **Campos completados con IA:** {', '.join(campos_sin_mapear[:5])}"
-                reporte += f"\n💡 **Añádelos a tu BD:** `actualizar datos: {{'custom': {{'campo': 'valor'}}}}`"
-            
-            return reporte
+            # ✅ NUEVO: Retornar diccionario estructurado
+            return {
+                "success": True,
+                "message": "✅ Documento generado automáticamente",
+                "output_file": output_filename,  # ✅ Nombre limpio sin markdown
+                "template": filename,
+                "total_campos": total_campos,
+                "desde_bd": desde_bd,
+                "desde_ia": desde_ia,
+                "campos_bd": [campo for campo in datos_mapeados.keys() if campo not in campos_sin_mapear][:10],
+                "campos_ia": campos_sin_mapear[:5] if campos_sin_mapear else []
+            }
             
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return f"❌ Error en rellenado automático: {e}"
-    
+            return {
+                "success": False,
+                "error": str(e),
+                "message": f"❌ Error en rellenado automático: {e}"
+            }
+              
     def _generate_realistic_data_with_ai(self, template_text: str, campos: list, filename: str) -> dict:
         """Usa Gemini para generar datos realistas para campos faltantes"""
         try:

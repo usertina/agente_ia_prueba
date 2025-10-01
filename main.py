@@ -9,7 +9,7 @@ from pathlib import Path
 import io
 import json
 from docx import Document
-
+from tools.document_filler import document_filler
 
 import schedule
 import uvicorn
@@ -252,20 +252,21 @@ class CommandHandler:
             notif_tool.set_current_user_id(user_id)
         
         result = use_tool(tool, user_input)
-        return {"tool": tool, "result": result}    
-    # ============= SERVICE WORKER =============
+        return {"tool": tool, "result": result}
 
-    @app.get("/sw.js")
-    async def service_worker():
-        """Sirve el Service Worker desde la raíz para registro correcto"""
-        return FileResponse(
-            "static/sw.js", 
-            media_type="application/javascript",
-            headers={
-                "Service-Worker-Allowed": "/",
-                "Cache-Control": "no-cache"
-            }
-        )
+# ============= SERVICE WORKER =============
+
+@app.get("/sw.js")
+async def service_worker():
+    """Sirve el Service Worker desde la raíz para registro correcto"""
+    return FileResponse(
+        "static/sw.js", 
+        media_type="application/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache"
+        }
+    )
 
 # ============= GESTORES DE ARCHIVOS =============
 
@@ -444,13 +445,6 @@ async def get_files():
 
 # ============= ENDPOINTS DE DOCUMENTOS =============
 
-from fastapi import UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
-import os
-import io
-import json
-from docx import Document
-
 @app.post("/upload/template")
 async def upload_template(file: UploadFile = File(...)):
     """Sube plantilla de documento"""
@@ -470,17 +464,21 @@ async def upload_template(file: UploadFile = File(...)):
 
 @app.get("/files/documents")
 async def get_document_files():
-    """Obtiene lista de archivos de documentos"""
+    """Obtiene lista de archivos de documentos (FILTRADO - sin archivos del sistema)"""
     try:
         templates = FileManager.list_files(
             DIRECTORIES["TEMPLATES_DIR"],
             ['.docx', '.txt', '.pdf']
         )
         
-        data_files = FileManager.list_files(
+        # Obtener TODOS los archivos de datos
+        all_data_files = FileManager.list_files(
             DIRECTORIES["DATA_DIR"],
             ['.json', '.csv', '.xlsx', '.txt']
         )
+        
+        # FILTRAR archivos que empiezan con _ (archivos del sistema)
+        data_files = [f for f in all_data_files if not f['name'].startswith('_')]
         
         output_files = FileManager.list_files(
             DIRECTORIES["OUTPUT_DIR"],
@@ -503,71 +501,122 @@ async def get_document_files():
         })
 
 @app.post("/fill/template")
-async def fill_template(template_filename: str):
-    """Rellena la plantilla automáticamente con datos predeterminados"""
+async def fill_template(template_filename: str = Form(...)):
+    """
+    Rellena plantilla automáticamente y devuelve información completa del archivo generado
+    """
     try:
-        # Leer la plantilla subida
-        template_file_path = os.path.join(DIRECTORIES["TEMPLATES_DIR"], template_filename)
-        with open(template_file_path, 'rb') as template_file:
-            # Analizar plantilla y rellenarla
-            filled_document = await process_template_with_master_data(template_file)
+        # Usar el sistema completo de document_filler
+        result = document_filler.auto_fill_with_database(template_filename)
         
-        # Guardar el documento generado
-        output_file_path = os.path.join(DIRECTORIES["OUTPUT_DIR"], f"filled_{template_filename}")
-        with open(output_file_path, 'wb') as output_file:
-            output_file.write(filled_document)
+        # Si el resultado es un string (error o mensaje)
+        if isinstance(result, str):
+            success = "✅" in result or "éxito" in result.lower() or "generado" in result.lower()
+            
+            # Intentar extraer el nombre del archivo del mensaje
+            output_filename = None
+            if success:
+                import re
+                match = re.search(r'Archivo:\s*([^\n]+\.(?:docx|txt|pdf))', result)
+                if match:
+                    output_filename = match.group(1).strip()
+            
+            return JSONResponse({
+                "success": success,
+                "message": result,
+                "output_file": output_filename,
+                "template": template_filename,
+                "download_url": f"/download/output/{output_filename}" if output_filename else None
+            })
+        
+        # Si es un diccionario (respuesta estructurada)
+        if isinstance(result, dict):
+            # Extraer información del mensaje si no está en el dict
+            output_filename = result.get("output_file")
+            
+            if not output_filename and 'message' in result:
+                import re
+                match = re.search(r'Archivo:\s*([^\n]+\.(?:docx|txt|pdf))', result['message'])
+                if match:
+                    output_filename = match.group(1).strip()
+            
+            return JSONResponse({
+                "success": True,
+                "message": result.get("message", "✅ Documento generado exitosamente"),
+                "output_file": output_filename,
+                "template": template_filename,
+                "statistics": {
+                    "total_fields": result.get("total_campos", 0),
+                    "from_database": result.get("desde_bd", 0),
+                    "from_ai": result.get("desde_ia", 0)
+                },
+                "download_url": f"/download/output/{output_filename}" if output_filename else None
+            })
+        
+        # Fallback
+        return JSONResponse({
+            "success": False,
+            "message": "Error desconocido en el procesamiento",
+            "template": template_filename
+        }, status_code=500)
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ Error en fill_template: {e}\n{error_trace}")
         
         return JSONResponse({
+            "success": False,
+            "error": str(e),
+            "message": f"❌ Error procesando plantilla: {e}",
+            "template": template_filename
+        }, status_code=500)
+
+@app.get("/master-data")
+async def get_master_data():
+    """Obtiene los datos maestros actuales del usuario"""
+    try:
+        return JSONResponse({
             "success": True,
-            "message": f"Plantilla {template_filename} rellena correctamente.",
-            "output_file": f"filled_{template_filename}"
+            "data": document_filler.user_database
         })
-    
     except Exception as e:
         return JSONResponse({
             "success": False,
             "error": str(e)
         }, status_code=500)
 
-async def process_template_with_master_data(template_file):
-    """Analiza la plantilla y la rellena con datos del archivo maestro"""
-    
-    # Cargar datos del archivo maestro (_master_user_data.json)
-    master_data = load_master_data()
-
-    # Procesar el tipo de plantilla (docx, pdf, etc.)
-    if template_file.name.endswith(".docx"):
-        # Procesar documento .docx
-        return await fill_docx_template(template_file, master_data)
-
-def load_master_data():
-    """Carga los datos del archivo maestro (_master_user_data.json)"""
-    master_data_path = os.path.join(DIRECTORIES["DATA_DIR"], "_master_user_data.json")
+@app.post("/master-data")
+async def update_master_data(data: dict):
+    """Actualiza los datos maestros del usuario"""
     try:
-        with open(master_data_path, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Archivo maestro no encontrado")
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Error al leer el archivo maestro")
+        result = document_filler.update_master_database(data)
+        
+        return JSONResponse({
+            "success": "✅" in result,
+            "message": result
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
-async def fill_docx_template(template_file, master_data):
-    """Rellena una plantilla .docx con los datos del archivo maestro"""
-    doc = Document(template_file)
-
-    # Buscar campos en el documento y reemplazarlos con los datos
-    for para in doc.paragraphs:
-        if "{empresa.nombre}" in para.text:
-            para.text = para.text.replace("{empresa.nombre}", master_data['empresa']['nombre'])
-        if "{representante.nombre_completo}" in para.text:
-            para.text = para.text.replace("{representante.nombre_completo}", master_data['representante']['nombre_completo'])
-        # Continuar con más campos a reemplazar según sea necesario
-
-    # Guardar el documento rellenado
-    output = io.BytesIO()
-    doc.save(output)
-    return output.getvalue()
-
+@app.post("/analyze/template")
+async def analyze_template(template_filename: str):
+    """Analiza qué campos necesita una plantilla"""
+    try:
+        result = document_filler.analyze_template(template_filename)
+        
+        return JSONResponse({
+            "success": True,
+            "analysis": result
+        })
+    except Exception as e:
+        return JSONResponse({
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
 
 @app.delete("/delete/output/{filename}")
 async def delete_output_file(filename: str):
@@ -582,8 +631,6 @@ async def delete_output_file(filename: str):
             "success": False,
             "error": "El archivo no se encuentra."
         }, status_code=404)
-    
-import os
 
 @app.delete("/delete/template/{filename}")
 async def delete_template(filename: str):
@@ -599,7 +646,27 @@ async def delete_template(filename: str):
             "error": f"El archivo '{filename}' no se encuentra en la carpeta de plantillas."
         }, status_code=404)
 
-
+@app.delete("/delete/data/{filename}")
+async def delete_data_file(filename: str):
+    """Elimina archivo de datos (PROTEGIDO contra archivos maestros)"""
+    
+    # ✅ PROTECCIÓN: No permitir borrar archivos que empiecen con _
+    if filename.startswith('_'):
+        return JSONResponse({
+            "success": False,
+            "error": "❌ Este es un archivo del sistema y no puede ser eliminado."
+        }, status_code=403)
+    
+    file_path = os.path.join(DIRECTORIES["DATA_DIR"], filename)
+    
+    if os.path.exists(file_path):
+        result = await FileManager.delete_file(DIRECTORIES["DATA_DIR"], filename)
+        return JSONResponse(result, status_code=200 if result["success"] else 404)
+    else:
+        return JSONResponse({
+            "success": False,
+            "error": "El archivo no se encuentra."
+        }, status_code=404)
 
 # ============= ENDPOINTS DE ESPECTROS RMN =============
 
@@ -868,7 +935,7 @@ async def send_test_notification(request: Request, user_id: str):
             "success": False,
             "message": f"Error: {str(e)}"
         }, status_code=500)
-    
+
 # ============= NUEVOS ENDPOINTS PARA HISTORIAL DE NOTIFICACIONES =============
 
 @app.get("/notifications/user/{user_id}/history")
@@ -1097,8 +1164,6 @@ async def debug_user_info(request: Request):
         })
     except Exception as e:
         return JSONResponse({
-            "error": str(e),
-            "client_ip": "unknown",
             "error": str(e),
             "client_ip": "unknown",
             "user_agent": "unknown"

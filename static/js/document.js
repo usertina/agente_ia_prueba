@@ -14,7 +14,7 @@ function initializeDocumentSection() {
             <span class="text-sm">Plantillas: 0 | Datos: 0 | Generados: 0</span>
         </div>
 
-                <!-- Botones de ayuda -->
+        <!-- Botones de ayuda -->
         <div class="space-y-2 mb-3">
             <button onclick="autoFillQuick()" 
                     class="w-full text-left p-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 font-bold shadow-lg">
@@ -114,10 +114,20 @@ async function loadDocumentFiles() {
         };
         
         updateDocumentFilesUI();
+        
+        return currentDocumentFiles;
     } catch (error) {
         console.error('Error cargando archivos de documentos:', error);
+        return {
+            templates: [],
+            data_files: [],
+            output_files: []
+        };
     }
 }
+
+// Exportar para uso global
+window.loadDocumentFiles = loadDocumentFiles;
 
 function updateDocumentFilesUI() {
     updateTemplatesList();
@@ -344,9 +354,9 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 Sistema de documentos inicializado');
 });
 
-// ========== NUEVAS FUNCIONES DE AUTORELLENADO ==========
+// ========== FUNCIÓN DE AUTORELLENADO MEJORADA ==========
 
-window.autoFillQuick = function() {
+window.autoFillQuick = async function() {
     const templates = currentDocumentFiles.templates;
     
     if (templates.length === 0) {
@@ -365,15 +375,11 @@ window.autoFillQuick = function() {
         if (!templateName) return;
     }
     
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = `rellenar auto: ${templateName}`;
-    form.dispatchEvent(new Event('submit'));
-    
-    // Mostrar mensaje de carga
-    const loading = document.createElement('div');
-    loading.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse';
-    loading.innerHTML = `
+    // Mostrar loading mejorado
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'autofill-loading';
+    loadingDiv.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    loadingDiv.innerHTML = `
         <div class="flex items-center">
             <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
@@ -382,12 +388,131 @@ window.autoFillQuick = function() {
             <span>⚡ Generando documento automáticamente...</span>
         </div>
     `;
-    document.body.appendChild(loading);
+    document.body.appendChild(loadingDiv);
     
-    setTimeout(() => {
-        if (loading.parentElement) loading.remove();
-    }, 5000);
+    try {
+        // Llamar al endpoint correcto de rellenado automático
+        const response = await fetch('/fill/template', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'template_filename': templateName
+            })
+        });
+        
+        const result = await response.json();
+        
+        // Remover loading
+        if (loadingDiv.parentElement) {
+            loadingDiv.remove();
+        }
+        
+        if (result.success) {
+            // ✅ ÉXITO - Mostrar notificación de éxito
+            showSuccessNotification(result, templateName);
+            
+            // ✅ ACTUALIZAR LISTA DE ARCHIVOS AUTOMÁTICAMENTE
+            await loadDocumentFiles();
+            
+            // ✅ SCROLL al documento generado
+            setTimeout(() => {
+                const outputSection = document.getElementById('output-files-list');
+                if (outputSection) {
+                    outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 500);
+            
+        } else {
+            // ❌ ERROR
+            alert(`❌ Error:\n${result.message || result.error || 'Error desconocido'}`);
+        }
+        
+    } catch (error) {
+        console.error('Error en autoFillQuick:', error);
+        
+        if (loadingDiv.parentElement) {
+            loadingDiv.remove();
+        }
+        
+        alert(`❌ Error de conexión: ${error.message}`);
+    }
 };
+
+// ✅ NUEVA FUNCIÓN: Mostrar notificación de éxito elegante
+function showSuccessNotification(result, templateName) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl z-50 animate-slide-in max-w-md';
+    
+    const stats = result.statistics || {};
+    const outputFile = result.output_file;
+    
+    notification.innerHTML = `
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <h3 class="text-sm font-bold">✅ Documento Generado</h3>
+                <p class="mt-1 text-xs">${outputFile || templateName}</p>
+                ${stats.total_fields ? `
+                    <p class="mt-2 text-xs opacity-90">
+                        📊 ${stats.total_fields} campos | 
+                        🗄️ ${stats.from_database} de BD | 
+                        🤖 ${stats.from_ai} de IA
+                    </p>
+                ` : ''}
+                ${result.download_url ? `
+                    <a href="${result.download_url}" 
+                       class="mt-2 inline-block text-xs bg-white text-green-600 px-3 py-1 rounded hover:bg-green-50 transition-colors">
+                        📥 Descargar
+                    </a>
+                ` : ''}
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    class="ml-4 text-white hover:text-gray-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remover después de 10 segundos
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            notification.style.transition = 'all 0.5s ease';
+            setTimeout(() => notification.remove(), 500);
+        }
+    }, 10000);
+}
+
+// ✅ CSS para la animación
+const style = document.createElement('style');
+style.textContent = `
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.5s ease-out;
+}
+`;
+document.head.appendChild(style);
 
 window.showUserDatabase = function() {
     const input = document.getElementById('user_input');
