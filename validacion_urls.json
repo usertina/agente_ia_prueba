@@ -1,0 +1,113 @@
+{
+  "Gobierno Vasco": [
+    {
+      "url": "https://www.euskadi.eus/ayudas-subvenciones/",
+      "tipo": "web",
+      "status": 404,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "Página no encontrada (404)"
+      ]
+    },
+    {
+      "url": "https://www.euskadi.eus/rss/ayudas/",
+      "tipo": "rss",
+      "status": null,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "RSS sin entradas",
+        "Error de parseo: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1028)>"
+      ]
+    },
+    {
+      "url": "https://www.euskadi.eus/rss/ayudas-subvenciones/",
+      "tipo": "rss",
+      "status": null,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "RSS sin entradas",
+        "Error de parseo: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1028)>"
+      ]
+    }
+  ],
+  "BDNS": [
+    {
+      "url": "https://www.infosubvenciones.es/bdnstrans/GE/es/convocatorias",
+      "tipo": "web",
+      "status": 200,
+      "accesible": true,
+      "contenido": "0 enlaces relevantes de 0 totales",
+      "errores": []
+    },
+    {
+      "url": "https://www.pap.hacienda.gob.es/bdnstrans/A04003/es/rss",
+      "tipo": "rss",
+      "status": null,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "RSS sin entradas",
+        "Error de parseo: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1028)>"
+      ]
+    }
+  ],
+  "Bizkaia": [
+    {
+      "url": "https://www.bizkaia.eus/es/subvenciones",
+      "tipo": "web",
+      "status": 404,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "Página no encontrada (404)"
+      ]
+    },
+    {
+      "url": "https://www.bizkaia.eus/rss/ayudas.xml",
+      "tipo": "rss",
+      "status": null,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "RSS sin entradas",
+        "Error de parseo: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1028)>"
+      ]
+    }
+  ],
+  "Gipuzkoa": [
+    {
+      "url": "https://www.gipuzkoa.eus/es/web/subvenciones",
+      "tipo": "web",
+      "status": 404,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "Página no encontrada (404)"
+      ]
+    }
+  ],
+  "SPRI": [
+    {
+      "url": "https://www.spri.eus/es/ayudas/",
+      "tipo": "web",
+      "status": 200,
+      "accesible": true,
+      "contenido": "4 enlaces relevantes de 181 totales",
+      "errores": []
+    },
+    {
+      "url": "https://www.spri.eus/es/rss/",
+      "tipo": "rss",
+      "status": null,
+      "accesible": false,
+      "contenido": null,
+      "errores": [
+        "RSS sin entradas",
+        "Error de parseo: <unknown>:96:55: not well-formed (invalid token)"
+      ]
+    }
+  ]
+}

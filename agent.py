@@ -172,6 +172,15 @@ def ask_gemini_for_tool(prompt: str) -> str:
         return "save_code"
     
     # ============================================================
+# DETECCIÓN DE OPERACIONES MATEMÁTICAS
+# ============================================================
+    math_pattern = r"^[0-9\s\+\-\*/\(\)\.]+$"  # Solo números y operadores
+    if re.match(math_pattern, prompt_lower):
+        print(f"✅ DETECTADO: operación matemática → calculator")
+        return "calculator"
+
+    
+    # ============================================================
     # FALLBACK: Gemini
     # ============================================================
     
