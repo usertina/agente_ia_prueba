@@ -1120,6 +1120,39 @@ async def view_notes():
             raise HTTPException(status_code=500, detail=f"Error al leer las notas: {e}")
     raise HTTPException(status_code=404, detail="No hay notas guardadas")
 
+@app.get("/check/notes")
+async def check_notes():
+    """Verifica si existe el archivo de notas y cuenta las líneas"""
+    try:
+        # Usar la ruta correcta desde DIRECTORIES
+        notes_path = os.path.join(DIRECTORIES["NOTES_DIR"], "notas.txt")
+        
+        if os.path.exists(notes_path):
+            with open(notes_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                lines = content.split('\n') if content else []
+                # Contar líneas no vacías como notas
+                notes_count = len([line for line in lines if line.strip()])
+            
+            return JSONResponse({
+                'exists': True,
+                'count': notes_count,
+                'size': os.path.getsize(notes_path)
+            })
+        else:
+            return JSONResponse({
+                'exists': False,
+                'count': 0
+            })
+            
+    except Exception as e:
+        print(f"❌ Error verificando notas: {e}")
+        return JSONResponse({
+            'error': str(e),
+            'exists': False,
+            'count': 0
+        }, status_code=500)
+
 @app.get("/health")
 async def health_check():
     """Health check del sistema"""

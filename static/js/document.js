@@ -11,7 +11,7 @@ function initializeDocumentSection() {
         <!-- Estadísticas -->
         <div id="document-stats" class="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg text-sm mb-3">
             <strong>📊 Estado Documentos</strong><br>
-            <span class="text-sm">Plantillas: 0 | Datos: 0 | Generados: 0</span>
+            <span class="text-sm">Plantillas: 0 | Generados: 0</span>
         </div>
 
         <!-- Botones de ayuda -->
@@ -48,23 +48,8 @@ function initializeDocumentSection() {
             </button>
         </div>
 
-        <!-- Upload datos -->
-        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📤 Subir Datos</h4>
-            <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.txt" class="hidden">
-            <button onclick="document.getElementById('data-file-input').click()" 
-                    class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm mb-2">
-                📁 Seleccionar Datos
-            </button>
-            <button onclick="uploadDataFile()" 
-                    class="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm">
-                ⬆️ Subir Datos
-            </button>
-        </div>
-
         <!-- Listas -->
         <div id="templates-list" class="mb-2"></div>
-        <div id="data-files-list" class="mb-2"></div>
         <div id="output-files-list"></div>
     `;
 
@@ -75,7 +60,6 @@ function initializeDocumentSection() {
 
 let currentDocumentFiles = {
     templates: [],
-    data_files: [],
     output_files: []
 };
 
@@ -109,7 +93,6 @@ async function loadDocumentFiles() {
         
         currentDocumentFiles = {
             templates: data.templates || [],
-            data_files: data.data_files || [],
             output_files: data.output_files || []
         };
         
@@ -120,7 +103,6 @@ async function loadDocumentFiles() {
         console.error('Error cargando archivos de documentos:', error);
         return {
             templates: [],
-            data_files: [],
             output_files: []
         };
     }
@@ -131,7 +113,6 @@ window.loadDocumentFiles = loadDocumentFiles;
 
 function updateDocumentFilesUI() {
     updateTemplatesList();
-    updateDataFilesList();
     updateOutputFilesList();
     updateDocumentStats();
 }
@@ -156,29 +137,6 @@ function updateTemplatesList() {
             <div class="flex space-x-1">
                 <button onclick="analyzeTemplate('${escapeHtml(file.name)}')" class="text-lg p-1" title="Analizar">🔍</button>
                 <button onclick="deleteTemplate('${escapeHtml(file.name)}')" class="text-lg p-1" title="Eliminar">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function updateDataFilesList() {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    
-    if (currentDocumentFiles.data_files.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 italic text-center p-4">📊 No hay datos</p>';
-        return;
-    }
-    
-    container.innerHTML = currentDocumentFiles.data_files.map(file => `
-        <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900 rounded-lg mb-2">
-            <div class="flex-1">
-                <div class="font-medium text-green-800 dark:text-green-200">${escapeHtml(file.name)}</div>
-                <div class="text-xs text-green-600 dark:text-green-400">${formatFileSize(file.size)}</div>
-            </div>
-            <div class="flex space-x-1">
-                <a href="/download/data/${encodeURIComponent(file.name)}" class="text-lg p-1" title="Descargar">⬇️</a>
-                <button onclick="deleteDataFile('${escapeHtml(file.name)}')" class="text-lg p-1" title="Eliminar">🗑️</button>
             </div>
         </div>
     `).join('');
@@ -211,12 +169,11 @@ function updateDocumentStats() {
     const statsElement = document.getElementById('document-stats');
     if (statsElement && currentDocumentFiles) {
         const templatesCount = currentDocumentFiles.templates.length;
-        const dataCount = currentDocumentFiles.data_files.length;
         const outputCount = currentDocumentFiles.output_files.length;
         
         statsElement.innerHTML = `
             <strong>📊 Estado Documentos</strong><br>
-            <span class="text-sm">Plantillas: ${templatesCount} | Datos: ${dataCount} | Generados: ${outputCount}</span>
+            <span class="text-sm">Plantillas: ${templatesCount} | Generados: ${outputCount}</span>
         `;
     }
 }
@@ -244,13 +201,6 @@ window.listTemplates = function() {
     form.dispatchEvent(new Event('submit'));
 };
 
-window.listDataFiles = function() {
-    const input = document.getElementById('user_input');
-    const form = document.getElementById('commandForm');
-    input.value = 'listar datos';
-    form.dispatchEvent(new Event('submit'));
-};
-
 // ========== FUNCIONES DE UPLOAD ==========
 
 window.uploadTemplate = async function() {
@@ -261,16 +211,6 @@ window.uploadTemplate = async function() {
     }
     
     await uploadFile('/upload/template', fileInput.files[0], fileInput);
-};
-
-window.uploadDataFile = async function() {
-    const fileInput = document.getElementById('data-file-input');
-    if (!fileInput || !fileInput.files.length) {
-        alert('Selecciona un archivo de datos');
-        return;
-    }
-    
-    await uploadFile('/upload/data', fileInput.files[0], fileInput);
 };
 
 async function uploadFile(endpoint, file, fileInput) {
@@ -298,11 +238,6 @@ async function uploadFile(endpoint, file, fileInput) {
 window.deleteTemplate = async function(filename) {
     if (!confirm(`¿Eliminar plantilla "${filename}"?`)) return;
     await deleteFile(`/delete/template/${encodeURIComponent(filename)}`);
-};
-
-window.deleteDataFile = async function(filename) {
-    if (!confirm(`¿Eliminar datos "${filename}"?`)) return;
-    await deleteFile(`/delete/data/${encodeURIComponent(filename)}`);
 };
 
 window.deleteOutputFile = async function(filename) {
@@ -446,7 +381,11 @@ function showSuccessNotification(result, templateName) {
     notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-2xl z-50 animate-slide-in max-w-md';
     
     const stats = result.statistics || {};
-    const outputFile = result.output_file;
+    // Limpiar el nombre del archivo de asteriscos y espacios extra
+    let outputFile = result.output_file;
+    if (outputFile) {
+        outputFile = outputFile.replace(/^\*+\s*/, '').trim();
+    }
     
     notification.innerHTML = `
         <div class="flex items-start">
