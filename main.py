@@ -824,16 +824,23 @@ async def download_cleaned_spectrum(filename: str):
 @app.get("/download/plot/{filename}")
 async def download_plot(filename: str):
     """Descarga gráfico"""
-    file_path = os.path.join(DIRECTORIES["RMN_PLOTS_DIR"], filename)
-    if os.path.exists(file_path):
-        return FileResponse(
-            file_path,
-            filename=filename,
-            media_type="image/png",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
-        )
-    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico: {filename}")
 
+    possible_filenames = [
+        f"plots{filename[6:]}",  # si el nombre comienza con "analysis", reemplazarlo por "plots"
+        filename  # la versión con "analysis"
+    ]
+
+    for possible_filename in possible_filenames:
+        file_path = os.path.join(DIRECTORIES["RMN_PLOTS_DIR"], possible_filename)
+        if os.path.exists(file_path):
+            return FileResponse(
+                file_path,
+                filename=possible_filename,
+                media_type="image/png",
+                headers={"Content-Disposition": f"attachment; filename={possible_filename}"}
+            )
+
+    raise HTTPException(status_code=404, detail=f"No se encontró el gráfico: {filename}")
 # ============= ENDPOINTS DE NOTIFICACIONES =============
 
 @app.post("/notifications/register")
