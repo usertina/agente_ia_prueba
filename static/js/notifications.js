@@ -88,9 +88,17 @@ function getNotificationIcon(type) {
     return icons[type] || '🔔';
 }
 
-// Actualiza estado en el panel
+// Actualiza estado en el panel - VERSIÓN CORREGIDA
 function updateNotificationStatus(userId = null) {
-    console.log('🔄 Actualizando estado de notificaciones...', { userId });
+    // 🔒 SANITIZACIÓN CRÍTICA: Convertir valores inválidos
+    if (!userId || userId === 'null' || userId === 'undefined' || userId === '') {
+        userId = window.userId;
+    }
+    
+    console.log('🔄 Actualizando estado de notificaciones...', { 
+        userId: userId ? userId.substring(0, 12) + '...' : 'NO DISPONIBLE',
+        windowUserId: window.userId ? window.userId.substring(0, 12) + '...' : 'NO DISPONIBLE'
+    });
     
     const statusEl = document.getElementById('notification-status');
     const swStatusEl = document.getElementById('service-worker-status');
@@ -100,17 +108,16 @@ function updateNotificationStatus(userId = null) {
         return;
     }
     
-    if (userId) {
+    if (userId && userId !== 'null') {
         const permission = Notification.permission === 'granted' ? '✅' : 
                           Notification.permission === 'denied' ? '❌' : '⚠️';
         
-        // CAMBIO: Mostrar ID completo truncado más claramente
         statusEl.innerHTML = `
             <strong>🆔 Usuario:</strong> ${userId.substring(0, 12)}...<br>
             <span class="text-xs">Permisos: ${permission} ${Notification.permission}</span>
         `;
         
-        console.log('✅ Estado actualizado:', { 
+        console.log('✅ Estado actualizado correctamente:', { 
             userId: userId.substring(0, 12), 
             permission: Notification.permission 
         });
@@ -119,6 +126,7 @@ function updateNotificationStatus(userId = null) {
             <strong>Estado:</strong> ⏳ Iniciando...<br>
             <span class="text-xs">Esperando registro...</span>
         `;
+        console.warn('⚠️ userId no disponible, mostrando estado de espera');
     }
     
     // Actualizar estado del Service Worker
@@ -141,6 +149,8 @@ function updateNotificationStatus(userId = null) {
 // Actualiza el contador de notificaciones no leídas
 function updateNotificationBadge() {
     const badge = document.getElementById('notification-badge');
+    const swStatus = document.getElementById('service-worker-status');
+    
     if (badge) {
         if (window.unreadCount > 0) {
             badge.textContent = window.unreadCount;
@@ -149,88 +159,167 @@ function updateNotificationBadge() {
             badge.classList.add('hidden');
         }
     }
+    
+    // Actualizar estado del Service Worker
+    if (swStatus) {
+        if ('serviceWorker' in navigator) {
+            if (navigator.serviceWorker.controller) {
+                swStatus.textContent = 'Service Worker: ✅ Activo';
+            } else {
+                swStatus.textContent = 'Service Worker: ⏳ Registrando...';
+                
+                // Verificar de nuevo después de 1 segundo
+                setTimeout(() => {
+                    if (navigator.serviceWorker.controller && swStatus) {
+                        swStatus.textContent = 'Service Worker: ✅ Activo';
+                    }
+                }, 1000);
+            }
+        } else {
+            swStatus.textContent = 'Service Worker: ❌ No soportado';
+        }
+    }
 }
 
 async function initializeNotificationSystem() {
     console.log('🔔 Inicializando sistema de notificaciones...');
+    console.log('📍 Estado inicial - window.userId:', window.userId);
     
     try {
         // 1. Actualizar UI inicial
-        updateNotificationStatus();
+        const statusEl = document.getElementById('notification-status');
+        if (statusEl) {
+            statusEl.innerHTML = `
+                <strong>Estado:</strong> ⏳ Registrando usuario...<br>
+                <span class="text-xs">Por favor espera...</span>
+            `;
+        }
         
-        // 2. Registrar Service Worker
+        // 2. Registrar Service Worker PRIMERO
         if (window.registerServiceWorker) {
             console.log('📝 Registrando Service Worker...');
-            await window.registerServiceWorker();
+            try {
+                await window.registerServiceWorker();
+                console.log('✅ Service Worker registrado');
+            } catch (swError) {
+                console.warn('⚠️ Error con Service Worker (no crítico):', swError);
+            }
         }
 
         // 3. Registrar usuario en el backend
-        console.log('👤 Registrando usuario...');
+        console.log('👤 Iniciando registro de usuario en backend...');
+        
+        const requestBody = {
+            device_name: `Web-${navigator.userAgent.substring(0, 20)}...`,
+            device_id: `web_${Date.now()}`
+        };
+        console.log('📤 Enviando request:', requestBody);
+        
         const response = await fetch('/notifications/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                device_name: `Web-${navigator.userAgent.substring(0, 20)}...`,
-                device_id: `web_${Date.now()}`
-            })
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
         });
 
+        console.log('📥 Response status:', response.status, response.statusText);
+
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('❌ Response error:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
         const data = await response.json();
+        console.log('📦 Response data:', data);
         
         if (!data.success) {
-            throw new Error('Fallo en registro de usuario');
+            throw new Error(data.error || 'Fallo en registro de usuario');
+        }
+
+        if (!data.user_id) {
+            throw new Error('No se recibió user_id del servidor');
         }
 
         // 4. Guardar user_id globalmente
         window.userId = data.user_id;
-        console.log(`✅ Usuario registrado: ${window.userId.substring(0, 12)}...`);
+        window.unreadCount = 0;
+        window.notificationHistory = [];
         
-        // 5. FORZAR actualización de UI INMEDIATAMENTE con userId
+        console.log(`✅ Usuario registrado exitosamente`);
+        console.log(`   - User ID: ${window.userId.substring(0, 12)}...`);
+        console.log(`   - Device: ${data.device_name || 'Unknown'}`);
+        console.log(`   - Session: ${data.session_id ? data.session_id.substring(0, 8) + '...' : 'N/A'}`);
+        
+        // 5. ACTUALIZAR UI INMEDIATAMENTE - PASANDO userId EXPLÍCITAMENTE
         updateNotificationStatus(window.userId);
         
         // 6. Cargar historial de notificaciones
-        await loadNotificationHistory();
+        console.log('📚 Cargando historial...');
+        try {
+            await loadNotificationHistory();
+            console.log('✅ Historial cargado');
+        } catch (histError) {
+            console.warn('⚠️ Error cargando historial (no crítico):', histError);
+        }
         
         // 7. Solicitar permisos de notificación
-        console.log('🔔 Solicitando permisos de notificación...');
-        const hasPermission = await requestNotificationPermission();
-        
-        // 8. Actualizar UI después de permisos
-        updateNotificationStatus(window.userId);
-        
-        if (hasPermission) {
-            console.log('✅ Permisos concedidos');
+        console.log('🔔 Solicitando permisos...');
+        try {
+            const hasPermission = await requestNotificationPermission();
+            console.log(`   - Permisos: ${hasPermission ? 'Concedidos' : 'Denegados/Pendientes'}`);
+        } catch (permError) {
+            console.warn('⚠️ Error con permisos (no crítico):', permError);
         }
 
-        // 9. Iniciar polling en Service Worker
+        // 8. Iniciar polling en Service Worker
         if (window.startServiceWorkerPolling && window.userId) {
             console.log('🔄 Iniciando polling en Service Worker...');
-            await window.startServiceWorkerPolling(window.userId);
+            try {
+                await window.startServiceWorkerPolling(window.userId);
+                console.log('✅ Polling Service Worker iniciado');
+            } catch (pollingError) {
+                console.warn('⚠️ Error con polling SW (no crítico):', pollingError);
+            }
         }
 
-        // 10. Iniciar polling de respaldo en el cliente
+        // 9. Iniciar polling de respaldo en el cliente
         if (window.userId) {
-            console.log('🔄 Iniciando polling de respaldo en cliente...');
+            console.log('🔄 Iniciando polling de respaldo...');
             startNotificationPolling();
+            console.log('✅ Polling cliente iniciado');
         }
 
-        // 11. Actualizaciones finales múltiples para asegurar
+        // 10. Actualizaciones finales - SIEMPRE CON userId
+        updateNotificationStatus(window.userId);
         setTimeout(() => updateNotificationStatus(window.userId), 500);
         setTimeout(() => updateNotificationStatus(window.userId), 1500);
         
-        console.log('✅ Sistema de notificaciones inicializado completamente');
+        console.log('✅✅✅ Sistema de notificaciones COMPLETAMENTE inicializado');
+        console.log('📍 Estado final - window.userId:', window.userId ? window.userId.substring(0, 12) + '...' : 'null');
 
     } catch (error) {
-        console.error("❌ Error inicializando notificaciones:", error);
-        updateNotificationStatus();  // Mostrar error
+        console.error("❌ ERROR CRÍTICO inicializando notificaciones:", error);
+        console.error("   Tipo:", error.name);
+        console.error("   Mensaje:", error.message);
+        console.error("   Stack:", error.stack);
+        
+        const statusEl = document.getElementById('notification-status');
+        if (statusEl) {
+            statusEl.innerHTML = `
+                <strong>Estado:</strong> ❌ Error<br>
+                <span class="text-xs">${error.message}</span><br>
+                <span class="text-xs">Reintentando en 5s...</span>
+            `;
+        }
         
         // Reintentar después de 5 segundos
-        console.log('🔄 Reintentando en 5 segundos...');
-        setTimeout(initializeNotificationSystem, 5000);
+        setTimeout(() => {
+            console.log('🔄 Reintentando inicialización...');
+            initializeNotificationSystem();
+        }, 5000);
     }
 }
 
@@ -343,11 +432,6 @@ async function openNotification(notificationId) {
     
     // Mostrar modal con detalles
     showNotificationModal(notif);
-    
-    // Si tiene URL, ofrecerla para abrir
-    if (notif.data && notif.data.url) {
-        // La URL se manejará en el modal
-    }
 }
 
 // Marca una notificación como leída
@@ -481,7 +565,7 @@ async function checkNotifications() {
                 showBrowserNotification(notif);
             }
             
-            // Actualizar UI
+            // Actualizar UI - PASANDO userId EXPLÍCITAMENTE
             updateNotificationStatus(window.userId);
             renderNotificationHistory();
         }
@@ -661,22 +745,35 @@ function getTypeColor(type) {
 function debugNotifications() {
     console.log('🔧 Debug de notificaciones activado');
     console.log('='.repeat(50));
-    console.log('User ID:', window.userId);
+    console.log('User ID:', window.userId || 'NO REGISTRADO');
     console.log('Notification permission:', Notification.permission);
     console.log('Service Worker:', navigator.serviceWorker.controller ? 'Activo' : 'Inactivo');
     console.log('Polling interval:', window.notificationCheckInterval ? 'Activo' : 'Inactivo');
-    console.log('Historial:', window.notificationHistory.length, 'notificaciones');
-    console.log('No leídas:', window.unreadCount);
+    console.log('Historial:', (window.notificationHistory || []).length, 'notificaciones');
+    console.log('No leídas:', window.unreadCount || 0);
     console.log('='.repeat(50));
+    
+    if (!window.userId) {
+        alert(`
+📊 DEBUG INFO:
+- User ID: ❌ NO REGISTRADO
+- Permisos: ${Notification.permission}
+- Service Worker: ${navigator.serviceWorker.controller ? 'Activo' : 'Inactivo'}
+
+⚠️ El usuario no está registrado.
+Espera unos segundos y recarga la página.
+        `);
+        return;
+    }
     
     const message = `
 📊 DEBUG INFO:
-- User ID: ${window.userId ? window.userId.substring(0, 12) + '...' : 'No registrado'}
+- User ID: ${window.userId.substring(0, 12) + '...'}
 - Permisos: ${Notification.permission}
 - Service Worker: ${navigator.serviceWorker.controller ? 'Activo' : 'Inactivo'}
 - Polling: ${window.notificationCheckInterval ? 'Activo' : 'Inactivo'}
-- Historial: ${window.notificationHistory.length} notificaciones
-- No leídas: ${window.unreadCount}
+- Historial: ${(window.notificationHistory || []).length} notificaciones
+- No leídas: ${window.unreadCount || 0}
     `;
     
     alert(message);
@@ -684,37 +781,59 @@ function debugNotifications() {
 
 async function testNotifications() {
     console.log('🧪 Probando sistema de notificaciones...');
+    console.log('📍 window.userId:', window.userId);
     
     if (!window.userId) {
-        alert('❌ Error: Usuario no registrado. Espera un momento e intenta de nuevo.');
+        console.error('❌ Usuario no registrado');
+        alert('❌ Error: Usuario no registrado.\n\nEspera unos segundos para que el sistema se inicialice e intenta de nuevo.');
+        
+        // Verificar si está en proceso de inicialización
+        setTimeout(() => {
+            if (!window.userId) {
+                console.log('🔄 Iniciando registro de usuario...');
+                initializeNotificationSystem();
+            }
+        }, 1000);
         return;
     }
     
     try {
+        console.log(`📤 Enviando notificación de prueba a: ${window.userId.substring(0, 12)}...`);
+        
         const response = await fetch(`/notifications/user/${window.userId}/test`, {
             method: 'POST'
         });
         
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ Notificación de prueba enviada');
-            alert('✅ Notificación de prueba enviada. Deberías recibirla en unos segundos.');
+            console.log('✅ Notificación de prueba enviada:', data);
+            alert('✅ Notificación de prueba enviada.\n\nDeberías recibirla en unos segundos.');
             
+            // Verificar notificaciones después de 2 segundos
             setTimeout(checkNotifications, 2000);
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
         console.error('❌ Error enviando notificación de prueba:', error);
-        alert(`❌ Error: ${error.message}`);
+        alert(`❌ Error: ${error.message}\n\nIntenta usar el comando "test" en el chat.`);
     }
 }
 
 function configureNotifications() {
     console.log('⚙️ Abriendo configuración de notificaciones...');
+    console.log('📍 window.userId actual:', window.userId);
     
     if (!window.userId) {
-        alert('❌ Error: Usuario no registrado. Espera un momento e intenta de nuevo.');
+        console.warn('⚠️ Usuario no registrado, esperando...');
+        alert('⏳ Sistema iniciando. Espera unos segundos e intenta de nuevo.');
+        
+        // Intentar inicializar si no está listo
+        setTimeout(() => {
+            if (!window.userId) {
+                initializeNotificationSystem();
+            }
+        }, 1000);
         return;
     }
     

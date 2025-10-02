@@ -82,7 +82,6 @@ function generateTabContent() {
                     <h3 class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">📄 Documentos</h3>
                     <ul class="space-y-1 text-sm">
                         <li><code>analizar: plantilla.docx</code> - Analizar plantilla</li>
-                        <li><code>crear ejemplo datos: plantilla.docx</code> - Crear datos</li>
                         <li><code>rellenar: plantilla.docx con datos.json</code> - Rellenar</li>
                     </ul>
                 </div>

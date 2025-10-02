@@ -5,7 +5,7 @@
     "last_updated": "2025-10-01T11:02:47.602868",
     "description": "Base de datos maestra del usuario/empresa"
   },
-   "empresa": {
+  "empresa": {
     "nombre": "Qubiz.Team",
     "nombre_completo": "QUBIZ TEAM S.L.",
     "nombre_comercial": "Qubiz.Team",
@@ -19,9 +19,13 @@
     "web": "www.qubiz.team",
     "sector": "Investigación de nanotecnología",
     "codigo_nace": "72.19",
-    "actividad_economica": "Investigación cuántica"
+    "actividad_economica": "Investigación cuántica",
+    "facturacion_anual": "2.5 millones €",
+    "numero_empleados": 15,
+    "fecha_creacion": "2018-06-15",
+    "comentarios": "Empresa en expansión con enfoque en investigación avanzada."
   },
-   "representante": {
+  "representante": {
     "nombre_completo": "Jorge de la Herran y Crespo",
     "cargo": "Presidente",
     "dni": "30574686G",
@@ -38,20 +42,81 @@
     "descripcion": "Soluciones tecnológicas avanzadas para empresas",
     "objetivo": "Mejorar la eficiencia empresarial mediante tecnología",
     "presupuesto": "75.000 €",
-    "duracion": "12 meses"
+    "duracion": "12 meses",
+    "impacto_esperado": "Incrementar la competitividad empresarial mediante la adopción de tecnología avanzada.",
+    "productos_resultantes": "Software para la optimización de procesos empresariales, informes detallados sobre la viabilidad de la solución.",
+    "indicadores_exito": [
+      "Reducción de tiempos operativos",
+      "Aumento de la eficiencia energética",
+      "Mejora en la toma de decisiones"
+    ],
+    "estado": "En ejecución",
+    "fecha_inicio": "2025-10-01",
+    "fecha_fin_estimada": "2026-10-01"
   },
-    "proyecto_redes": {
+  "proyecto_redes": {
     "titulo_proyecto": "Detección cuántica de PFAS en tiempo real",
     "sector_productivo": "Investigación de nanotecnología - Detección cuántica",
     "actividad_economica": "72.19 - Investigación y desarrollo experimental",
     "antecedentes": "Nuestra empresa cuenta con amplia experiencia en el desarrollo de soluciones para la Detección de PFAS",
     "descripcion_general": "Detección de PFAS en tiempo real en el agua",
     "difusion_resultados": "Conseguir que se detecten a nivel microscópico las PFAS",
-    "estrategia_mercado": "Conseguir subvenciones",
-    "grado_innovacion": "el grado de innovación es algo importante",
-    "calidad_metodologia": "buena",
-    "planificacion": "A largo plazo hacer la sensórica cuantica más accesible",
+    "estrategia_mercado": "Conseguir subvenciones, con planes de expansión a otras industrias que utilicen aguas residuales.",
+    "grado_innovacion": "El grado de innovación es algo importante, ya que la tecnología desarrollada permite realizar análisis en tiempo real y a gran escala.",
+    "calidad_metodologia": "Buena, con técnicas robustas y validadas a nivel internacional.",
+    "planificacion": "A largo plazo hacer la sensórica cuántica más accesible, con el fin de que la tecnología pueda ser utilizada por organismos reguladores y empresas.",
     "duracion": "12 meses",
-    "estructura_trabajo": "PT1: Análisis, PT2: Desarrollo"
-    }
+    "estructura_trabajo": "PT1: Análisis de necesidades y viabilidad del mercado, PT2: Desarrollo del prototipo de sensores, PT3: Implementación y pruebas, PT4: Validación y difusión de resultados.",
+    "estado": "Pendiente de validación",
+    "fecha_inicio": "2026-01-01",
+    "fecha_fin_estimada": "2027-01-01",
+    "colaboraciones": [
+      {
+        "entidad": "Instituto de Investigación Cuántica",
+        "rol": "Colaboración en la parte experimental y en la validación de resultados.",
+        "responsable": "Dr. Luis Pérez",
+        "contacto": "luis.perez@cuantico.com"
+      },
+      {
+        "entidad": "Universidad de Bilbao",
+        "rol": "Aportación de know-how técnico y soporte en la parte de sensores cuánticos.",
+        "responsable": "Dra. Ana Ruiz",
+        "contacto": "ana.ruiz@bilbao.edu"
+      }
+    ],
+    "actividades_diffusion": [
+      {
+        "id": "ADX001",
+        "tipo_actuacion": "Conferencia internacional",
+        "descripcion": "Presentación de resultados preliminares del proyecto en una conferencia sobre nanotecnología."
+      },
+      {
+        "id": "ADX002",
+        "tipo_actuacion": "Webinar",
+        "descripcion": "Organización de un webinar para presentar avances y resultados a posibles interesados."
+      }
+    ],
+    "financiacion_propuesta": {
+      "cantidad_solicitada": "50.000 €",
+      "porcentaje_subvencion": "66.67%",
+      "otras_fuentes": [
+        {
+          "entidad": "Ministerio de Innovación",
+          "monto": "15.000 €",
+          "tipo": "Subvención"
+        },
+        {
+          "entidad": "Fondo Europeo de Desarrollo Regional",
+          "monto": "10.000 €",
+          "tipo": "Subvención"
+        }
+      ]
+    },
+    "riesgos": [
+      "Dependencia de la disponibilidad de materiales cuánticos especializados.",
+      "Desarrollo de tecnologías disruptivas que podrían enfrentar resistencia del mercado.",
+      "Posibles retrasos en el proceso de validación debido a las exigencias regulatorias."
+    ],
+    "plan_de_riesgos": "Identificación temprana de fallos en la cadena de suministro, contactos estrechos con organismos reguladores para una validación más rápida, y diseño de estrategias de mitigación ante posibles retrasos técnicos."
+  }
 }

@@ -73,6 +73,30 @@
     ],
     "estructura_trabajo": [
       "proyecto_redes.estructura_trabajo"
+    ],
+    "facturacion_anual": [
+      "empresa.facturacion_anual"
+    ],
+    "numero_empleados": [
+      "empresa.numero_empleados"
+    ],
+    "fecha_creacion": [
+      "empresa.fecha_creacion"
+    ],
+    "comentarios": [
+      "empresa.comentarios"
+    ],
+    "estado_proyecto": [
+      "proyectos.estado"
+    ],
+    "fecha_inicio_proyecto": [
+      "proyectos.fecha_inicio"
+    ],
+    "fecha_fin_estimada_proyecto": [
+      "proyectos.fecha_fin_estimada"
+    ],
+    "actividades_diffusion": [
+      "proyecto_redes.actividades_diffusion"
     ]
   }
 }
