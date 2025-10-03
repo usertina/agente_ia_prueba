@@ -120,22 +120,30 @@
     "plan_de_riesgos": "Identificación temprana de fallos en la cadena de suministro, contactos estrechos con organismos reguladores para una validación más rápida, y diseño de estrategias de mitigación ante posibles retrasos técnicos."
   },
   "proyecto_subvencionable": {
-    "antecedentes": "",
-    "descripcion_general": "",
-    "difusion_resultados": "",
-    "estrategia_mercado": "",
-    "grado_innovacion": "",
-    "calidad_metodologia": "",
-    "planificacion": "",
-    "duracion": "",
-    "estructura_trabajo": "",
-    "fecha_inicio": "",
-    "fecha_fin_estimada": "",
+    "titulo_proyecto": "Detección cuántica de PFAS en tiempo real",
+    "sector_productivo": "Investigación de nanotecnología - Detección cuántica",
+    "actividad_economica": "72.19 - Investigación y desarrollo experimental",
+    "antecedentes": "Las sustancias perfluoroalquiladas y polifluoroalquiladas (PFAS) son motivo de gran preocupación, y se pide que se regulen como una clase. En 2021, la Organización de Cooperación y Desarrollo Económicos (OCDE) revisó la definición de PFAS para incluir cualquier sustancia química que contenga al menos una fracción CF2 o CF3 saturada. La comunidad mundial se enfrenta a una crisis crítica y creciente: la contaminación de las fuentes de agua por «sustancias químicas para siempre» nocivas conocidas como PFAS (sustancias perfluoroalquiladas y polifluoroalquiladas).",
+    "descripcion_general": "En respuesta a este reto mundial, QUBIZ.team está desarrollando el sistema de detección cuántica más avanzado para la detección de PFAS en el agua, que ofrece una precisión y velocidad inigualables. Esta tecnología innovadora integra sensores cuánticos avanzados con hardware de Resonancia Magnética Nuclear (RMN) patentado y sofisticados algoritmos de IA para el análisis de datos con el fin de ofrecer análisis de agua in situ en tiempo real.",
+    "difusion_resultados": "Los resultados del proyecto se difundirán mediante: publicaciones en revistas técnicas especializadas, participación en congresos nacionales e internacionales sobre IA industrial, organización de workshops demostrativos con empresas del sector, y publicación de casos de uso en plataformas de código abierto.",
+    "estrategia_mercado": "El mercado de soluciones de detección de PFAS está experimentando un crecimiento significativo, impulsado por la creciente concienciación sobre los riesgos relacionados con los PFAS y la introducción de normativas medioambientales más estrictas en todo el mundo. El sistema de detección cuántica de QUBIZ.team está preparado para capitalizar este mercado en expansión, ofreciendo una solución oportuna y muy pertinente para las necesidades actuales y futuras.",
+    "grado_innovacion": "QUBIZ.team ha desarrollado el primer Sistema de detección cuántica para detección de PFAS en tiempo real, un avance que transforma radicalmente el control de la calidad del agua. A diferencia de los métodos de laboratorio existentes, la solución portátil basada en RMN de QUBIZ.team ofrece análisis in situ en tiempo real (menos de 3 segundos) y detección de 1300 compuestos de PFAS.",
+    "calidad_metodologia": "El proyecto seguirá metodología ágil con sprints de 3 semanas. Se aplicarán estándares ISO 27001 para seguridad de datos, ISO 9001 para calidad del desarrollo, y se realizarán revisiones técnicas quincenales con validación de KPIs.",
+    "planificacion": "El plan de implantación es claro, estructurado y viable. Hemos definido paquetes de trabajo, hitos y entregables con plazos y recursos realistas. Nuestra hoja de ruta garantiza que alcanzaremos el TRL8 en 2026 y el TRL9 en 2028, en consonancia con nuestros objetivos de comercialización.",
+    "duracion": "12 meses",
+    "estructura_trabajo": "PT1: Análisis de necesidades y viabilidad del mercado, PT2: Desarrollo del prototipo de sensores, PT3: Implementación y pruebas, PT4: Validación y difusión de resultados.",
+    "fecha_inicio": "2026-01-01",
+    "fecha_fin_estimada": "2027-01-01",
     "actividades_diffusion": [
       {
-        "id": "",
-        "tipo_actuacion": "",
-        "descripcion": ""
+        "id": "ADX001",
+        "tipo_actuacion": "Conferencia internacional",
+        "descripcion": "Presentación de resultados preliminares del proyecto en una conferencia sobre nanotecnología."
+      },
+      {
+        "id": "ADX002",
+        "tipo_actuacion": "Webinar",
+        "descripcion": "Organización de un webinar para presentar avances y resultados a posibles interesados."
       }
     ]
   },

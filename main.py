@@ -9,7 +9,11 @@ from pathlib import Path
 import io
 import json
 from docx import Document
+from requests import request
 from tools.document_filler import document_filler
+
+from pydantic import BaseModel
+from typing import Optional
 
 import schedule
 import uvicorn
@@ -574,6 +578,50 @@ async def fill_template(template_filename: str = Form(...)):
             "template": template_filename
         }, status_code=500)
 
+# Modelo Pydantic para validar los datos que llegan del frontend
+class FillRequest(BaseModel):
+    template_filename: str
+    doc_type: Optional[str] = None
+
+@app.post("/fill/auto")
+async def handle_auto_fill(request_data: FillRequest):
+    """
+    Nuevo endpoint para manejar las solicitudes de autorellenado desde el frontend.
+    """
+    try:
+        # 1. Llama a tu función de DocumentFiller como antes
+        result = document_filler.auto_fill_with_database(
+            request_data.template_filename, 
+            request_data.doc_type
+        )
+
+        #
+        # 👇 ¡AQUÍ ESTÁ LA MAGIA! 👇
+        # Si el rellenado fue exitoso, reorganizamos los datos para el frontend.
+        #
+        if result.get("success"):
+            output_filename = result.get("output_file")
+            
+            # 2. Crea el objeto 'statistics' que el frontend espera
+            result["statistics"] = {
+                "total_fields": result.get("total_campos", 0),
+                "from_database": result.get("desde_bd", 0),
+                "from_ai": result.get("desde_ia", 0)
+            }
+            
+            # 3. Añade la URL de descarga que el frontend necesita
+            if output_filename:
+                result["download_url"] = f"/download/output/{output_filename}"
+
+        # 4. Devuelve el resultado ya formateado
+        return result
+
+    except Exception as e:
+        print(f"Error en /fill/auto: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail={"success": False, "error": str(e)}
+        )
 @app.get("/master-data")
 async def get_master_data():
     """Obtiene los datos maestros actuales del usuario"""

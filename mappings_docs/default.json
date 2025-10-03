@@ -1,8 +1,8 @@
 {
   "_metadata": {
-    "name": "Mapeo por defecto avanzado + listas",
-    "description": "Mapeos con alias inteligentes y manejo de listas/compuestos",
-    "version": "1.4"
+    "name": "Mapeo por defecto avanzado + listas (v1.6)",
+    "description": "Mapeos con alias inteligentes y manejo de listas/compuestos, con soporte contextual para plantillas genéricas (ej. Red.es).",
+    "version": "1.6"
   },
   "mappings": {
     "empresa": ["empresa.nombre"],
@@ -39,7 +39,16 @@
     "fecha": ["_current_date"],
 
     "titulo_proyecto": ["proyecto_subvencionable.titulo_proyecto", "proyecto_redes.titulo_proyecto", "proyectos.principal"],
+    
     "descripcion_general": ["proyecto_subvencionable.descripcion_general", "proyecto_redes.descripcion_general", "proyectos.descripcion"],
+    "antecedentes": ["proyecto_subvencionable.antecedentes", "proyecto_redes.antecedentes"],
+    "difusion_resultados": ["proyecto_subvencionable.difusion_resultados", "proyecto_redes.difusion_resultados"],
+    "estrategia_mercado": ["proyecto_subvencionable.estrategia_mercado", "proyecto_redes.estrategia_mercado"],
+    "grado_innovacion": ["proyecto_subvencionable.grado_innovacion", "proyecto_redes.grado_innovacion"],
+    "calidad_metodologia": ["proyecto_subvencionable.calidad_metodologia", "proyecto_redes.calidad_metodologia"],
+    "planificacion": ["proyecto_subvencionable.planificacion", "proyecto_redes.planificacion"],
+    "estructura_trabajo": ["proyecto_subvencionable.estructura_trabajo", "proyecto_redes.estructura_trabajo"],
+
     "objetivo": ["proyectos.objetivo"],
     "presupuesto": ["proyectos.presupuesto"],
     "duracion": ["proyecto_subvencionable.duracion", "proyecto_redes.duracion", "proyectos.duracion"],
@@ -52,18 +61,14 @@
     "fecha_fin_estimada_proyecto": ["proyecto_subvencionable.fecha_fin_estimada", "proyectos.fecha_fin_estimada", "proyecto_redes.fecha_fin_estimada"],
 
     "sector_productivo": ["proyecto_subvencionable.sector_productivo", "proyecto_redes.sector_productivo"],
-    "antecedentes": ["proyecto_subvencionable.antecedentes", "proyecto_redes.antecedentes"],
-    "difusion_resultados": ["proyecto_subvencionable.difusion_resultados", "proyecto_redes.difusion_resultados"],
-    "estrategia_mercado": ["proyecto_subvencionable.estrategia_mercado", "proyecto_redes.estrategia_mercado"],
-    "grado_innovacion": ["proyecto_subvencionable.grado_innovacion", "proyecto_redes.grado_innovacion"],
-    "calidad_metodologia": ["proyecto_subvencionable.calidad_metodologia", "proyecto_redes.calidad_metodologia"],
-    "planificacion": ["proyecto_subvencionable.planificacion", "proyecto_redes.planificacion"],
-    "estructura_trabajo": ["proyecto_subvencionable.estructura_trabajo", "proyecto_redes.estructura_trabajo"],
 
     "colaboraciones_resumen": ["proyecto_redes.colaboraciones"],
     "actividades_diffusion_resumen": ["proyecto_redes.actividades_diffusion", "proyecto_subvencionable.actividades_diffusion"],
     "financiacion_propuesta": ["proyecto_redes.financiacion_propuesta"],
     "riesgos_resumen": ["proyecto_redes.riesgos"],
-    "plan_de_riesgos": ["proyecto_redes.plan_de_riesgos"]
+    "plan_de_riesgos": ["proyecto_redes.plan_de_riesgos"],
+    
+    "texto_texto": ["proyecto_subvencionable.antecedentes", "proyecto_subvencionable.descripcion_general", "proyecto_subvencionable.difusion_resultados", "proyecto_subvencionable.estrategia_mercado", "proyecto_subvencionable.grado_innovacion", "proyecto_subvencionable.calidad_metodologia", "proyecto_subvencionable.planificacion"],
+    "mm_aaaa": ["proyecto_subvencionable.fecha_inicio"] 
   }
 }

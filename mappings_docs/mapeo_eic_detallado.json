@@ -1,0 +1,17 @@
+{
+  "_metadata": {
+    "name": "Mapeo para EIC Detallado",
+    "description": "Prioriza los textos largos de la sección proyecto_subvencionable.",
+    "template_pattern": ".*eic.*|.*memoria.*",
+    "version": "1.0"
+  },
+  "mappings": {
+    "antecedentes": ["proyecto_subvencionable.antecedentes"],
+    "descripcion_general": ["proyecto_subvencionable.descripcion_general"],
+    "planificacion": ["proyecto_subvencionable.planificacion"],
+    "grado_innovacion": ["proyecto_subvencionable.grado_innovacion"],
+    "titulo_proyecto": ["proyecto_subvencionable.titulo_proyecto"],
+    "fecha_fin_estimada_proyecto": ["proyecto_subvencionable.fecha_fin_estimada"],
+    "razon_social": ["empresa.nombre_completo"]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_metadata": {
+    "name": "Mapeo para Resumen PFAS",
+    "description": "Prioriza los datos resumidos del proyecto_redes.",
+    "template_pattern": ".*resumen.*|.*pfas.*", 
+    "version": "1.0"
+  },
+  "mappings": {
+    "antecedentes": ["proyecto_redes.antecedentes"],
+    "descripcion_general": ["proyecto_redes.descripcion_general"],
+    "titulo_proyecto": ["proyecto_redes.titulo_proyecto"],
+    "fecha_fin_estimada_proyecto": ["proyecto_redes.fecha_fin_estimada"],
+    "razon_social": ["empresa.nombre_completo"]
+  }
+}

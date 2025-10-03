@@ -48,23 +48,11 @@ function initializeDocumentSection() {
             </button>
         </div>
 
-        <!-- Upload datos -->
-        <div class="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <h4 class="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">📤 Subir Datos</h4>
-            <input type="file" id="data-file-input" accept=".json,.csv,.xlsx,.txt" class="hidden">
-            <button onclick="document.getElementById('data-file-input').click()" 
-                    class="w-full p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm mb-2">
-                📁 Seleccionar Datos
-            </button>
-            <button onclick="uploadDataFile()" 
-                    class="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm">
-                ⬆️ Subir Datos
-            </button>
-        </div>
+        
 
         <!-- Listas -->
         <div id="templates-list" class="mb-2"></div>
-        <div id="data-files-list" class="mb-2"></div>
+    
         <div id="output-files-list"></div>
     `;
 
@@ -151,28 +139,7 @@ function updateTemplatesList() {
     `).join('');
 }
 
-function updateDataFilesList() {
-    const container = document.getElementById('data-files-list');
-    if (!container) return;
-    
-    if (currentDocumentFiles.data_files.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 italic text-center p-4">📊 No hay datos</p>';
-        return;
-    }
-    
-    container.innerHTML = currentDocumentFiles.data_files.map(file => `
-        <div class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900 rounded-lg mb-2">
-            <div class="flex-1">
-                <div class="font-medium text-green-800 dark:text-green-200">${escapeHtml(file.name)}</div>
-                <div class="text-xs text-green-600 dark:text-green-400">${formatFileSize(file.size)}</div>
-            </div>
-            <div class="flex space-x-1">
-                <a href="/download/data/${encodeURIComponent(file.name)}" class="text-lg p-1" title="Descargar">⬇️</a>
-                <button onclick="deleteDataFile('${escapeHtml(file.name)}')" class="text-lg p-1" title="Eliminar">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-}
+
 
 function updateOutputFilesList() {
     const container = document.getElementById('output-files-list');
@@ -201,7 +168,7 @@ function updateDocumentStats() {
     const statsElement = document.getElementById('document-stats');
     if (statsElement && currentDocumentFiles) {
         const templatesCount = currentDocumentFiles.templates.length;
-        const dataCount = currentDocumentFiles.data_files.length;
+        
         const outputCount = currentDocumentFiles.output_files.length;
         
         statsElement.innerHTML = `
@@ -241,90 +208,129 @@ window.listDataFiles = function() {
     form.dispatchEvent(new Event('submit'));
 };
 
+// EN document.js
+
+// =============================================================
+// REEMPLAZA TU FUNCIÓN autoFillQuick POR TODO ESTE BLOQUE
+// =============================================================
+
+// Función principal que inicia el proceso de autorellenado
 window.autoFillQuick = async function() {
     const templates = currentDocumentFiles.templates;
     
     if (templates.length === 0) {
-        alert('⚠️ No hay plantillas disponibles.\n\n1. Sube una plantilla primero\n2. Luego usa este botón');
+        alert('⚠️ No hay plantillas. Sube una primero.');
         return;
     }
     
     let templateName;
-    
     if (templates.length === 1) {
         templateName = templates[0].name;
     } else {
         const opciones = templates.map((t, i) => `${i+1}. ${t.name}`).join('\n');
-        templateName = prompt(`🎯 Selecciona plantilla para rellenar:\n\n${opciones}\n\nEscribe el nombre completo:`);
+        const selected = prompt(`🎯 Elige una plantilla para rellenar:\n\n${opciones}\n\nEscribe el nombre completo o el número:`);
         
-        if (!templateName) return;
+        if (!selected) return; // El usuario canceló
+        
+        // Permite seleccionar por número o por nombre
+        const index = parseInt(selected, 10) - 1;
+        if (!isNaN(index) && templates[index]) {
+            templateName = templates[index].name;
+        } else if (templates.some(t => t.name === selected)) {
+            templateName = selected;
+        } else {
+            alert('❌ Plantilla no válida.');
+            return;
+        }
     }
     
-    // Mostrar loading mejorado
+    // En lugar de llamar directamente a la API, muestra la modal
+    showDocTypeModal(templateName);
+};
+
+// Nueva función para mostrar la modal
+function showDocTypeModal(templateName) {
+    const modal = document.getElementById('doc-type-modal');
+    if (modal) {
+        // Almacena el nombre de la plantilla en la modal para usarlo después
+        modal.dataset.templateName = templateName;
+        modal.classList.remove('hidden');
+    }
+}
+
+// Nueva función para ocultar la modal
+function hideDocTypeModal() {
+    const modal = document.getElementById('doc-type-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Nueva función que contiene la lógica de la llamada a la API
+async function runAutoFill(templateName, docType) {
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'autofill-loading';
     loadingDiv.className = 'fixed top-4 right-4 bg-purple-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    loadingDiv.innerHTML = `
-        <div class="flex items-center">
-            <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>⚡ Generando documento automáticamente...</span>
-        </div>
-    `;
+    loadingDiv.innerHTML = `<div class="flex items-center"><svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>⚡ Generando documento...</span></div>`;
     document.body.appendChild(loadingDiv);
     
     try {
-        // Llamar al endpoint correcto de rellenado automático
-        const response = await fetch('/fill/template', {
+        // Llamada a tu endpoint de Python
+        // Se añade el 'doc_type' al cuerpo de la petición
+        const response = await fetch('/fill/auto', { // Asegúrate que el endpoint sea el correcto
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                'template_filename': templateName
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                template_filename: templateName,
+                doc_type: docType
             })
         });
         
         const result = await response.json();
         
-        // Remover loading
-        if (loadingDiv.parentElement) {
-            loadingDiv.remove();
-        }
+        if (loadingDiv.parentElement) loadingDiv.remove();
         
         if (result.success) {
-            // ✅ ÉXITO - Mostrar notificación de éxito
             showSuccessNotification(result, templateName);
-            
-            // ✅ ACTUALIZAR LISTA DE ARCHIVOS AUTOMÁTICAMENTE
             await loadDocumentFiles();
-            
-            // ✅ SCROLL al documento generado
             setTimeout(() => {
                 const outputSection = document.getElementById('output-files-list');
                 if (outputSection) {
-                    outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }, 500);
-            
         } else {
-            // ❌ ERROR
             alert(`❌ Error:\n${result.message || result.error || 'Error desconocido'}`);
         }
-        
     } catch (error) {
-        console.error('Error en autoFillQuick:', error);
-        
-        if (loadingDiv.parentElement) {
-            loadingDiv.remove();
-        }
-        
+        console.error('Error en runAutoFill:', error);
+        if (loadingDiv.parentElement) loadingDiv.remove();
         alert(`❌ Error de conexión: ${error.message}`);
     }
-};
+}
 
+// Lógica para manejar los clics en los botones de la modal
+// Se añade al final de tu archivo, dentro del evento DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('doc-type-modal');
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            const button = event.target.closest('button');
+            if (!button) return;
+
+            const docType = button.dataset.docType;
+            if (docType) {
+                // Si se hizo clic en un botón de tipo
+                const templateName = modal.dataset.templateName;
+                hideDocTypeModal();
+                runAutoFill(templateName, docType);
+            } else if (button.id === 'cancel-doc-type-modal') {
+                // Si se hizo clic en cancelar
+                hideDocTypeModal();
+            }
+        });
+    }
+});
 // ✅ NUEVA FUNCIÓN: Mostrar notificación de éxito elegante
 function showSuccessNotification(result, templateName) {
     const notification = document.createElement('div');
@@ -429,15 +435,6 @@ window.uploadTemplate = async function() {
     await uploadFile('/upload/template', fileInput.files[0], fileInput);
 };
 
-window.uploadDataFile = async function() {
-    const fileInput = document.getElementById('data-file-input');
-    if (!fileInput || !fileInput.files.length) {
-        alert('Selecciona un archivo de datos');
-        return;
-    }
-    
-    await uploadFile('/upload/data', fileInput.files[0], fileInput);
-};
 
 async function uploadFile(endpoint, file, fileInput) {
     const formData = new FormData();
@@ -466,10 +463,7 @@ window.deleteTemplate = async function(filename) {
     await deleteFile(`/delete/template/${encodeURIComponent(filename)}`);
 };
 
-window.deleteDataFile = async function(filename) {
-    if (!confirm(`¿Eliminar datos "${filename}"?`)) return;
-    await deleteFile(`/delete/data/${encodeURIComponent(filename)}`);
-};
+
 
 window.deleteOutputFile = async function(filename) {
     if (!confirm(`¿Eliminar documento "${filename}"?`)) return;

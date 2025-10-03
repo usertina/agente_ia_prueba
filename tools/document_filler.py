@@ -8,6 +8,7 @@ import PyPDF2
 import pandas as pd
 from pathlib import Path
 import re
+import unidecode # Necesario para la normalización de nombres
 
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -87,10 +88,18 @@ class DocumentFiller:
         
         return default
     
-    def detect_mapping_for_template(self, template_name: str) -> dict:
+    def detect_mapping_for_template(self, template_name: str, doc_type: str = None) -> dict:
         """Detecta qué mapeo usar según el nombre de la plantilla"""
         template_lower = template_name.lower()
         
+        # PRIORIDAD 1: Usar la elección explícita del usuario
+        if doc_type == 'detailed':
+            print("✅ Usando mapeo para documentos detallados (EIC) por elección del usuario.")
+            return self.load_mapping_file('mapeo_eic_detallado.json')
+        if doc_type == 'summary':
+            print("✅ Usando mapeo para resúmenes (PFAS) por elección del usuario.")
+            return self.load_mapping_file('mapeo_resumen_corto.json')
+
         # Buscar en cache primero
         if template_name in self.mappings_cache:
             return self.mappings_cache[template_name]
@@ -469,44 +478,97 @@ class DocumentFiller:
 
     # ============= MAPEO INTELIGENTE DE CAMPOS =============
     
-    def smart_field_mapping(self, field_name: str, template_name: str = None) -> str:
-        """Mapea un campo usando el mapeo apropiado"""
+    def _get_contextual_key(self, template_text: str, field_name: str) -> str:
+        """
+        Busca el texto de la sección cercana al campo genérico (ej. 'texto_texto')
+        para inferir la clave de la base de datos correcta.
+        """
+        if field_name not in ['texto_texto', 'mm_aaaa']:
+            return field_name
+
+        # Encontrar la posición del marcador en el texto
+        pattern = re.escape(field_name)
+        match = re.search(pattern, template_text)
+        
+        if not match:
+            return field_name
+        
+        # Buscar la cabecera de la sección más cercana antes del marcador
+        # Búsqueda de texto anterior (ej. "1.1. Antecedentes y contexto del proyecto:")
+        context_start = max(0, match.start() - 300) # Buscar hasta 300 caracteres antes
+        preceding_text = template_text[context_start:match.start()].strip()
+        
+        # Intentar extraer el título de la sección (ej. con números y puntos)
+        # Patrón mejorado para capturar la última cabecera que termina en ':'
+        last_header_match = re.findall(r'(\d+\.?\s*[^\n:]+):', preceding_text, re.IGNORECASE)
+        
+        if last_header_match:
+            header = last_header_match[-1].strip()
+            # Normalizar la cabecera para buscar la clave
+            normalized_header = self.normalize_field_name(header)
+
+            # Mapeo manual de la cabecera normalizada a la clave del proyecto
+            if 'antecedentes' in normalized_header: return 'antecedentes'
+            if 'descripcion_general' in normalized_header: return 'descripcion_general'
+            if 'difusion_resultados' in normalized_header or 'difusion' in normalized_header: return 'difusion_resultados'
+            if 'estrategia_mercado' in normalized_header: return 'estrategia_mercado'
+            if 'grado_innovacion' in normalized_header: return 'grado_innovacion'
+            if 'calidad_metodologia' in normalized_header or 'calidad' in normalized_header: return 'calidad_metodologia'
+            if 'planificacion' in normalized_header: return 'planificacion'
+            if 'fecha_inicio' in normalized_header: return 'fecha_inicio_proyecto' # Usa el alias general
+            if 'fecha_finalizacion' in normalized_header: return 'fecha_fin_estimada_proyecto' # Usa el alias general
+            
+        return field_name # Devolver el nombre original si no se encuentra contexto
+    
+    # === Nuevo Código para Búsqueda en Cascada ===
+    def smart_field_mapping(self, field_name: str, template_name: str = None, template_text: str = None, doc_type: str = None) -> str:
+        """Mapea un campo usando el mapeo apropiado, priorizando el mapeo específico sobre el default."""
+        
+        # 1. Obtener configuraciones de mapeo
+        # 👇 ¡AQUÍ ESTÁ EL CAMBIO! Pasamos 'doc_type' a la siguiente función. 👇
+        specific_mapping_config = self.detect_mapping_for_template(template_name, doc_type) if template_name else self.default_mapping
+        default_mapping_config = self.default_mapping
+        
+        # Crear una lista de diccionarios de mapeo para buscar: [Mapeo Específico, Mapeo por Defecto]
+        # Esto asegura que el mapeo más específico (si no es el default) se compruebe primero.
+        mappings_to_check = [specific_mapping_config.get('mappings', {})]
+        if specific_mapping_config.get('_metadata', {}).get('name') != 'Mapeo por defecto':
+            mappings_to_check.append(default_mapping_config.get('mappings', {}))
+        
+        # 2. Resolución Contextual para campos ambiguos (ej. [TEXTO])
+        if template_text and field_name in ['texto_texto', 'mm_aaaa']:
+            contextual_field_name = self._get_contextual_key(template_text, field_name)
+            if contextual_field_name != field_name:
+                field_name = contextual_field_name
+
+        # 3. Búsqueda en Cascada (Priority Search)
         field_lower = field_name.lower().replace('_', ' ').replace('-', ' ')
         
-        # Obtener mapeo apropiado
-        if template_name:
-            mapping_config = self.detect_mapping_for_template(template_name)
-
-        # dentro de smart_field_mapping
-        if field_name.endswith("_resumen"):
-            return self.format_list_field(field_name.replace("_resumen", ""))
-    
-        else:
-            mapping_config = self.default_mapping
-        
-        field_mappings = mapping_config.get('mappings', {})
-        
-        # Buscar coincidencia
-        for key, paths in field_mappings.items():
-            key_comparable = key.lower().replace('_', ' ').replace('-', ' ')
-            
-            if key_comparable == field_lower or key_comparable in field_lower or field_lower in key_comparable:
+        for field_mappings in mappings_to_check:
+            # 3.1. Búsqueda por coincidencia exacta
+            if field_name in field_mappings:
+                paths = field_mappings[field_name]
                 for path in paths:
-                    if '{' in path:
-                        value = self.format_composite_field(path)
-                        if value:
-                            return value
-                    else:
-                        value = self.get_nested_value(path)
-                        if value:
-                            return value
-        
-        # Buscar en custom
+                    value = self.get_nested_value(path, field_name)
+                    if value: 
+                        return value
+            
+            # 3.2. Búsqueda por similitud
+            for key, paths in field_mappings.items():
+                key_comparable = key.lower().replace('_', ' ').replace('-', ' ')
+                if key_comparable == field_lower or key_comparable in field_lower or field_lower in key_comparable:
+                    if field_name not in field_mappings: # Evitar doble chequeo de la clave exacta
+                        for path in paths:
+                            value = self.get_nested_value(path, field_name)
+                            if value: 
+                                return value
+
+        # 4. Fallback: Buscar en 'custom'
         if field_name in self.user_database.get('custom', {}):
             return self.user_database['custom'][field_name]
         
         return None
-    
+        
     def format_list_field(self, field_name: str, separator: str = "\n") -> str:
         """Convierte listas de diccionarios o strings en texto plano para plantillas"""
         value = self.get_nested_value(field_name)
@@ -539,8 +601,8 @@ class DocumentFiller:
         
         return result
     
-    def get_nested_value(self, path: str):
-        """Obtiene valor anidado de la base de datos"""
+    def get_nested_value(self, path: str, field_name: str = None):
+        """Obtiene valor anidado de la base de datos, aplicando formato si es necesario"""
         if path == '_current_date':
             return datetime.now().strftime("%d/%m/%Y")
         
@@ -553,26 +615,47 @@ class DocumentFiller:
             else:
                 return None
         
+        if value is None:
+            return None
+            
+        # 🆕 Aplicar formato de fecha MM/AAAA si el campo final es mm_aaaa
+        if field_name == 'mm_aaaa' or field_name == 'fecha_inicio_proyecto' or field_name == 'fecha_fin_estimada_proyecto':
+            try:
+                # Intentar parsear el valor a una fecha. Asumimos formatos comunes.
+                if isinstance(value, str):
+                    # Intentar YYYY-MM-DD
+                    if re.match(r'\d{4}-\d{2}-\d{2}', value):
+                        date_obj = datetime.strptime(value, "%Y-%m-%d")
+                    # Intentar YYYY/MM/DD o DD/MM/YYYY si el formato es ambiguo
+                    else:
+                        date_obj = datetime.strptime(value, "%Y-%m-%d") # Esto puede fallar, pero es la mejor suposición
+                elif isinstance(value, datetime):
+                    date_obj = value
+                
+                # Devolver en formato MM/AAAA
+                return date_obj.strftime("%m/%Y")
+                
+            except Exception as e:
+                # Si el formato es un mes/año ya listo (ej. 01/2025) o falla, lo devolvemos tal cual.
+                return value
+        
         return value if value else None
 
     # ============= RELLENADO AUTOMÁTICO PRINCIPAL =============
-    # Agregar este método a la clase DocumentFiller en document_filler.py
-# Busca la función auto_fill_with_database y actualiza la parte de detección de campos
-
+    
     def normalize_field_name(self, field_name: str) -> str:
         """
-        Normaliza nombres de campos eliminando prefijos comunes
-        Ej: 'Completar titulo_proyecto' -> 'titulo_proyecto'
+        Normaliza nombres de campos eliminando prefijos comunes, puntuación y acentos.
+        Ej: '[Nombre/razón social]' -> 'razon_social'
         """
         field_normalized = field_name.strip()
         
-        # Eliminar prefijos comunes
+        # 1. Eliminar corchetes, comillas y espacios iniciales/finales
+        field_normalized = field_normalized.replace('[', '').replace(']', '').replace('"', '').strip()
+        
+        # 2. Eliminar prefijos comunes (mantenemos solo algunos para campos muy específicos)
         prefixes_to_remove = [
-            'Completar ',
-            'completar ',
-            'COMPLETAR ',
-            'Rellenar ',
-            'rellenar ',
+            'Completar ', 'completar ', 'COMPLETAR ', 'Rellenar ', 'rellenar ',
         ]
         
         for prefix in prefixes_to_remove:
@@ -580,94 +663,122 @@ class DocumentFiller:
                 field_normalized = field_normalized[len(prefix):]
                 break
         
+        # 3. Eliminar acentos
+        field_normalized = unidecode.unidecode(field_normalized)
+        field_normalized = field_normalized.lower()
+        
+        # 4. Mapeos específicos de alias
+        if 'razon social' in field_normalized or 'nombre razon social' in field_normalized: return 'razon_social'
+        if 'codigo nace' in field_normalized: return 'codigo_nace'
+        if 'titulo de proyecto' in field_normalized or field_normalized == 'titulo': return 'titulo_proyecto'
+        if 'sector productivo' in field_normalized: return 'sector_productivo'
+        
+        # 5. Limpiar el resto de caracteres especiales para estandarizar
+        field_normalized = re.sub(r'[^\w]+', '_', field_normalized)
+        field_normalized = re.sub(r'_{2,}', '_', field_normalized).strip('_')
+        
+        # 6. Mapeo final si el campo es genérico (ej. [TEXTO] -> texto_texto, [MM/AAAA] -> mm_aaaa)
+        if field_normalized in ['texto']:
+             return 'texto_texto' 
+        if field_normalized in ['mm_aaaa']:
+            return 'mm_aaaa'
+        
         return field_normalized
 
-    def auto_fill_with_database(self, filename: str) -> str:
+    def auto_fill_with_database(self, filename: str, doc_type: str = None) -> str:
         """Rellena plantilla automáticamente con base de datos maestra"""
         try:
             file_path = os.path.join(TEMPLATES_DIR, filename)
             if not os.path.exists(file_path):
                 return f"❌ No se encontró la plantilla: {filename}"
 
-            # 1. Cargar plantilla
+            # 1. Cargar plantilla y extraer texto
             text_content = self.extract_text_from_file(file_path)
             
             # 2. Detectar campos
             campos_necesarios = set()
             campos_necesarios.update(re.findall(r'\{\{(\w+)\}\}', text_content))
-            campos_necesarios.update(re.findall(r'\[([^\]]+)\]', text_content))  # ✅ CAMBIADO: Captura todo dentro de []
+            campos_necesarios.update(re.findall(r'\[([^\]]+)\]', text_content)) 
             campos_necesarios.update(re.findall(r'_(\w+)_', text_content))
             
             if not campos_necesarios:
                 return "❌ No se detectaron campos en la plantilla"
             
-            print(f"📋 Campos detectados: {campos_necesarios}")
+            # print(f"📋 Campos detectados: {campos_necesarios}")
             
             # 3. Normalizar y mapear campos a datos reales
             datos_mapeados = {}
             campos_sin_mapear = []
             
             for campo in campos_necesarios:
-                # ✅ NUEVO: Normalizar el campo antes de buscar
                 campo_normalizado = self.normalize_field_name(campo)
-                print(f"🔄 Campo original: '{campo}' → normalizado: '{campo_normalizado}'")
                 
-                valor = self.smart_field_mapping(campo_normalizado, filename)
+                # 🆕 Aquí se pasa el texto completo para el mapeo contextual
+                valor = self.smart_field_mapping(campo_normalizado, filename, text_content, doc_type)
                 
                 if valor:
                     # Guardar con el nombre ORIGINAL del campo (para el reemplazo)
                     datos_mapeados[campo] = valor
-                    print(f"✅ {campo} → {valor[:50]}...")
+                    # print(f"✅ {campo} → {valor[:50]}...")
                 else:
                     campos_sin_mapear.append(campo_normalizado)
-                    print(f"⚠️ {campo} → No encontrado en BD")
+                    # print(f"⚠️ {campo} → No encontrado en BD")
             
             # 4. Completar campos faltantes con IA
+            # Esta sección genera el contenido para los campos que no se encontraron,
+            # lo que incluye las celdas de las tablas o campos que la lógica contextual falló en resolver.
             if campos_sin_mapear:
-                print(f"🤖 Usando IA para {len(campos_sin_mapear)} campos...")
-                datos_ia = self._generate_realistic_data_with_ai(
-                    text_content, 
-                    campos_sin_mapear,
-                    filename
-                )
-                # Mapear de vuelta a los nombres originales
-                for campo in campos_necesarios:
-                    campo_norm = self.normalize_field_name(campo)
-                    if campo_norm in datos_ia:
-                        datos_mapeados[campo] = datos_ia[campo_norm]
+                # Filtrar campos que ya fueron resueltos como 'texto_texto' pero que el mapeo simple no encontró
+                # y los que realmente no tienen valor.
+                campos_a_pedir_ia = [c for c in campos_sin_mapear if c != 'texto_texto'] 
+                
+                if campos_a_pedir_ia:
+                    # print(f"🤖 Usando IA para {len(campos_a_pedir_ia)} campos...")
+                    datos_ia = self._generate_realistic_data_with_ai(
+                        text_content, 
+                        campos_a_pedir_ia,
+                        filename
+                    )
+                    # Mapear de vuelta a los nombres originales
+                    for campo in campos_necesarios:
+                        campo_norm = self.normalize_field_name(campo)
+                        if campo_norm in datos_ia:
+                            datos_mapeados[campo] = datos_ia[campo_norm]
             
             # 5. Agregar fecha
             datos_mapeados['fecha'] = datetime.now().strftime("%d/%m/%Y")
-            # También agregar con formato "Completar fecha" por si acaso
             datos_mapeados['Completar fecha'] = datetime.now().strftime("%d/%m/%Y")
             
             # 6. Rellenar documento
             output_name = f"{filename.split('.')[0]}_filled_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             extension = 'docx' if filename.endswith('.docx') else 'txt'
-            output_filename = f"{output_name}.{extension}"  # ✅ NUEVO: nombre completo del archivo
+            output_filename = f"{output_name}.{extension}" 
             
             if filename.endswith('.docx'):
                 result = self.fill_docx(file_path, datos_mapeados, output_name)
             elif filename.endswith('.txt'):
                 result = self.fill_txt(file_path, datos_mapeados, output_name)
             else:
-                return "❌ Formato no soportado. Solo DOCX y TXT"
+                return {
+                    "success": False,
+                    "error": "Formato no soportado",
+                    "message": "❌ Formato no soportado. Solo DOCX y TXT"
+                }
             
             # 7. Generar estadísticas
             total_campos = len(campos_necesarios)
             desde_bd = total_campos - len(campos_sin_mapear)
             desde_ia = len(campos_sin_mapear)
             
-            # ✅ NUEVO: Retornar diccionario estructurado
             return {
                 "success": True,
                 "message": "✅ Documento generado automáticamente",
-                "output_file": output_filename,  # ✅ Nombre limpio sin markdown
+                "output_file": output_filename, 
                 "template": filename,
                 "total_campos": total_campos,
                 "desde_bd": desde_bd,
                 "desde_ia": desde_ia,
-                "campos_bd": [campo for campo in datos_mapeados.keys() if campo not in campos_sin_mapear][:10],
+                "campos_bd": [campo for campo in datos_mapeados.keys() if self.normalize_field_name(campo) not in campos_sin_mapear][:10],
                 "campos_ia": campos_sin_mapear[:5] if campos_sin_mapear else []
             }
             
@@ -684,12 +795,12 @@ class DocumentFiller:
         """Usa Gemini para generar datos realistas para campos faltantes"""
         try:
             prompt = f"""
-Genera datos realistas para estos campos de un documento de convocatoria de ayudas de I+D en IA:
+Genera datos realistas para estos campos de un documento de convocatoria de ayudas de I+D en IA, usando como contexto tu conocimiento sobre QUBIZ TEAM S.L. (Investigación cuántica y detección de PFAS) y el documento.
 
-CONTEXTO DEL DOCUMENTO:
+CONTEXTO DEL DOCUMENTO (fragmento):
 {template_text[:1500]}
 
-CAMPOS A COMPLETAR:
+CAMPOS A COMPLETAR (incluyendo las celdas de las tablas):
 {', '.join(campos)}
 
 Devuelve SOLO un JSON con formato:
@@ -699,7 +810,8 @@ Devuelve SOLO un JSON con formato:
 }}
 
 Usa formato español, lenguaje técnico-profesional apropiado para proyectos de I+D en IA.
-Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 150 palabras.
+Para campos de texto largo, genera textos de al menos 150 palabras.
+Para campos de tabla, genera valores coherentes (ej. ID, tipo, descripción).
 """
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
@@ -739,6 +851,14 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
                     text = []
                     for paragraph in doc.paragraphs:
                         text.append(paragraph.text)
+                    
+                    # Extraer texto de tablas también para el contexto
+                    for table in doc.tables:
+                        for row in table.rows:
+                            for cell in row.cells:
+                                for p in cell.paragraphs:
+                                    text.append(p.text)
+                    
                     return '\n'.join(text)
                 except Exception as docx_error:
                     return f"Error procesando DOCX: {docx_error}"
@@ -820,6 +940,7 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
 
             replacements = 0
 
+            # Rellenar párrafos
             for paragraph in doc.paragraphs:
                 for key, value in data.items():
                     if key.startswith('_'):
@@ -827,10 +948,22 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
 
                     patterns = [f'{{{{{key}}}}}', f'[{key}]', f'_{key}_']
                     for pattern in patterns:
-                        if pattern in paragraph.text:
-                            paragraph.text = paragraph.text.replace(pattern, str(value))
-                            replacements += 1
+                        # Usar re.escape para manejar casos como [NIF] sin conflicto con regex
+                        escaped_key = re.escape(key)
+                        
+                        # Buscar los patrones que envuelven la clave
+                        regex_patterns = [
+                            re.compile(r'\{\{' + escaped_key + r'\}\}', re.IGNORECASE),
+                            re.compile(r'\[' + escaped_key + r'\]', re.IGNORECASE),
+                            re.compile(r'_' + escaped_key + r'_', re.IGNORECASE)
+                        ]
+                        
+                        for regex in regex_patterns:
+                            if regex.search(paragraph.text):
+                                paragraph.text = regex.sub(str(value), paragraph.text)
+                                replacements += 1
 
+            # Rellenar tablas
             for table in doc.tables:
                 for row in table.rows:
                     for cell in row.cells:
@@ -838,11 +971,21 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
                             if key.startswith('_'):
                                 continue
 
-                            patterns = [f'{{{{{key}}}}}', f'[{key}]', f'_{key}_']
-                            for pattern in patterns:
-                                if pattern in cell.text:
-                                    cell.text = cell.text.replace(pattern, str(value))
-                                    replacements += 1
+                            # Usar los patrones de regex como en párrafos
+                            escaped_key = re.escape(key)
+                            regex_patterns = [
+                                re.compile(r'\{\{' + escaped_key + r'\}\}', re.IGNORECASE),
+                                re.compile(r'\[' + escaped_key + r'\]', re.IGNORECASE),
+                                re.compile(r'_' + escaped_key + r'_', re.IGNORECASE)
+                            ]
+
+                            # Iterar sobre los párrafos de la celda
+                            for p in cell.paragraphs:
+                                for regex in regex_patterns:
+                                    if regex.search(p.text):
+                                        p.text = regex.sub(str(value), p.text)
+                                        replacements += 1
+
 
             output_path = os.path.join(OUTPUT_DIR, f"{output_name}.docx")
             doc.save(output_path)
@@ -901,9 +1044,26 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
             except json.JSONDecodeError as e:
                 return f"❌ JSON inválido: {e}\n\nEjemplo correcto:\nactualizar datos: {{\"empresa\": {{\"nombre\": \"Nueva Empresa\"}}}}"
         
+        #
+        # 👇 ESTE ES EL BLOQUE MODIFICADO 👇
+        #
         elif prompt.startswith("rellenar auto:"):
-            filename = prompt[14:].strip()
-            return self.auto_fill_with_database(filename)
+            command_part = prompt_original[14:].strip()
+            doc_type = None
+
+            # Busca el separador 'tipo:' sin importar mayúsculas/minúsculas
+            split_keyword = " tipo:"
+            split_index = command_part.lower().find(split_keyword)
+
+            if split_index != -1:
+                # Si lo encuentra, separa el nombre del archivo y el tipo
+                filename = command_part[:split_index].strip()
+                doc_type = command_part[split_index + len(split_keyword):].strip()
+            else:
+                # Si no, todo es el nombre del archivo
+                filename = command_part
+
+            return self.auto_fill_with_database(filename, doc_type)
         
         elif "listar datos" in prompt:
             return self.list_data_files()
@@ -932,7 +1092,7 @@ Para campos largos (antecedentes, descripción, etc.) genera textos de al menos 
         
         else:
             return self.show_help()
-    
+        
     def show_help(self) -> str:
         """Muestra ayuda del sistema"""
         return """
@@ -1145,7 +1305,8 @@ ver datos redes
             if marcadores:
                 result += "📋 **Campos detectados:**\n\n"
                 for i, campo in enumerate(set(marcadores), 1):
-                    valor = self.smart_field_mapping(campo, filename)
+                    # Usar el mapeo contextual para obtener el valor
+                    valor = self.smart_field_mapping(self.normalize_field_name(campo), filename, text_content)
                     estado = "✅ En BD" if valor else "❌ Falta"
                     result += f"{i}. **{campo}** - {estado}\n"
 
@@ -1190,10 +1351,11 @@ ver datos redes
             }
 
             for marcador in marcadores:
-                if marcador.lower() in datos_tipicos:
-                    ejemplo_datos[marcador] = datos_tipicos[marcador.lower()]
+                marcador_norm = self.normalize_field_name(marcador)
+                if marcador_norm.lower() in datos_tipicos:
+                    ejemplo_datos[marcador] = datos_tipicos[marcador_norm.lower()]
                 else:
-                    ejemplo_datos[marcador] = f"[COMPLETAR_{marcador.upper()}]"
+                    ejemplo_datos[marcador] = f"[COMPLETAR_{marcador_norm.upper()}]"
 
             if not marcadores:
                 for key, value in datos_tipicos.items():
