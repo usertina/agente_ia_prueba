@@ -23,7 +23,6 @@ from fastapi.middleware.cors import CORSMiddleware
 # Imports locales
 from agent import use_tool, ask_gemini_for_tool
 from multi_user_notification_system import multi_user_system
-from scheduler_ayudas import check_new_ayudas
 from tools.rmn_spectrum_cleaner import rmn_cleaner
 
 load_dotenv()
@@ -242,18 +241,33 @@ class CommandHandler:
         # ============================================================
         # FALLBACK: Usar ask_gemini_for_tool
         # ============================================================
-        
+
         # Si no coincide con ningún comando específico, usar el sistema de detección
-        tool = ask_gemini_for_tool(user_input)
+        tool = ask_gemini_for_tool(user_input).lower().strip()  # normalizar a minúsculas
         print(f"🔧 Gemini eligió herramienta: {tool}")
-        
-        if tool == "notifications":
-            import tools.notifications as notif_tool
-            notif_tool.set_current_user_id(user_id)
-        
+
+        # Diccionario de herramientas que necesitan user_id
+        tool_mapping = {
+            "notifications": "notifications",
+            "ayudas_manager": "ayudas_manager",
+            "patents": "patents_manager",
+            "papers": "papers_manager"
+        }
+
+        if tool in tool_mapping:
+            mod_name = tool_mapping[tool]
+            mod = __import__(f"tools.{mod_name}", fromlist=["run"])
+            if tool == "notifications":
+                mod.set_current_user_id(user_id)
+            
+            result = mod.run(user_input, user_id)
+            return {"tool": tool, "result": result}
+
+
+        # Si no está en la lista de herramientas especiales, usar use_tool genérico
         result = use_tool(tool, user_input)
         return {"tool": tool, "result": result}
-
+                
 # ============= SERVICE WORKER =============
 
 @app.get("/sw.js")
@@ -329,18 +343,6 @@ class FileManager:
                 return {"success": False, "error": f"No se encontró {filename}"}
         except Exception as e:
             return {"success": False, "error": str(e)}
-
-# ============= SCHEDULER DE TAREAS =============
-
-def start_ayudas_scheduler():
-    """Ejecuta el scheduler de ayudas en background"""
-    schedule.every(6).hours.do(check_new_ayudas)
-    schedule.every().day.at("09:00").do(check_new_ayudas)
-    schedule.every().day.at("14:00").do(check_new_ayudas)
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
 
 # ============= ENDPOINTS PRINCIPALES =============
 
@@ -1231,14 +1233,6 @@ async def startup_event():
                 os.makedirs(path, exist_ok=True)
                 print(f"📁 {name} creado: {path}")
         
-        # Iniciar scheduler de ayudas en thread separado
-        ayudas_thread = threading.Thread(
-            target=start_ayudas_scheduler,
-            daemon=True
-        )
-        ayudas_thread.start()
-        print("💶 Scheduler de ayudas iniciado")
-        
         # Iniciar monitoreo de notificaciones en background
         success = multi_user_system.start_background_monitoring()
         if success:
@@ -1294,7 +1288,7 @@ if __name__ == "__main__":
     """Punto de entrada para ejecutar la aplicación"""
     
     # Configuración de puerto y host
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 3000))
     host = "0.0.0.0"  # Importante para Render
     
     # Detectar entorno
