@@ -1,102 +1,69 @@
 {
   "_metadata": {
-    "name": "Mapeo por defecto",
-    "description": "Mapeos genéricos",
-    "version": "1.0"
+    "name": "Mapeo por defecto avanzado + listas",
+    "description": "Mapeos con alias inteligentes y manejo de listas/compuestos",
+    "version": "1.4"
   },
   "mappings": {
-    "empresa": [
-      "empresa.nombre"
-    ],
-    "razon_social": [
-      "empresa.nombre_completo"
-    ],
-    "cif": [
-      "empresa.cif"
-    ],
-    "nif": [
-      "empresa.cif"
-    ],
-    "direccion": [
-      "empresa.direccion"
-    ],
-    "ciudad": [
-      "empresa.ciudad"
-    ],
-    "telefono": [
-      "empresa.telefono"
-    ],
-    "email": [
-      "empresa.email"
-    ],
-    "representante": [
-      "representante.nombre_completo"
-    ],
-    "cargo": [
-      "representante.cargo"
-    ],
-    "dni": [
-      "representante.dni"
-    ],
-    "fecha": [
-      "_current_date"
-    ],
-    "actividad_economica": [
-      "proyecto_redes.actividad_economica"
-    ],
-    "titulo_proyecto": [
-      "proyecto_redes.titulo_proyecto"
-    ],
-    "sector_productivo": [
-      "proyecto_redes.sector_productivo"
-    ],
-    "antecedentes": [
-      "proyecto_redes.antecedentes"
-    ],
-    "descripcion_general": [
-      "proyecto_redes.descripcion_general"
-    ],
-    "difusion_resultados": [
-      "proyecto_redes.difusion_resultados"
-    ],
-    "estrategia_mercado": [
-      "proyecto_redes.estrategia_mercado"
-    ],
-    "grado_innovacion": [
-      "proyecto_redes.grado_innovacion"
-    ],
-    "calidad_metodologia": [
-      "proyecto_redes.calidad_metodologia"
-    ],
-    "duracion": [
-      "proyecto_redes.duracion"
-    ],
-    "estructura_trabajo": [
-      "proyecto_redes.estructura_trabajo"
-    ],
-    "facturacion_anual": [
-      "empresa.facturacion_anual"
-    ],
-    "numero_empleados": [
-      "empresa.numero_empleados"
-    ],
-    "fecha_creacion": [
-      "empresa.fecha_creacion"
-    ],
-    "comentarios": [
-      "empresa.comentarios"
-    ],
-    "estado_proyecto": [
-      "proyectos.estado"
-    ],
-    "fecha_inicio_proyecto": [
-      "proyectos.fecha_inicio"
-    ],
-    "fecha_fin_estimada_proyecto": [
-      "proyectos.fecha_fin_estimada"
-    ],
-    "actividades_diffusion": [
-      "proyecto_redes.actividades_diffusion"
-    ]
+    "empresa": ["empresa.nombre"],
+    "razon_social": ["empresa.nombre_completo"],
+    "nombre_comercial": ["empresa.nombre_comercial"],
+    "cif": ["empresa.cif"],
+    "nif": ["empresa.cif"],
+    "direccion": ["empresa.direccion"],
+    "ciudad": ["empresa.ciudad"],
+    "provincia": ["empresa.provincia"],
+    "codigo_postal": ["empresa.codigo_postal"],
+    "pais": ["empresa.pais"],
+    "telefono": ["empresa.telefono"],
+    "email": ["empresa.email"],
+    "web": ["empresa.web"],
+    "sector": ["empresa.sector"],
+    "codigo_nace": ["empresa.codigo_nace"],
+    "actividad_economica": ["proyecto_redes.actividad_economica", "proyecto_subvencionable.actividad_economica", "empresa.actividad_economica"],
+    "facturacion_anual": ["empresa.facturacion_anual"],
+    "numero_empleados": ["empresa.numero_empleados"],
+    "fecha_creacion": ["empresa.fecha_creacion"],
+    "comentarios": ["empresa.comentarios"],
+
+    "representante": ["representante.nombre_completo"],
+    "cargo": ["representante.cargo"],
+    "dni": ["representante.dni"],
+    "telefono_representante": ["representante.telefono"],
+    "email_representante": ["representante.email"],
+
+    "banco": ["bancarios.banco"],
+    "iban": ["bancarios.iban"],
+    "swift": ["bancarios.swift"],
+
+    "fecha": ["_current_date"],
+
+    "titulo_proyecto": ["proyecto_subvencionable.titulo_proyecto", "proyecto_redes.titulo_proyecto", "proyectos.principal"],
+    "descripcion_general": ["proyecto_subvencionable.descripcion_general", "proyecto_redes.descripcion_general", "proyectos.descripcion"],
+    "objetivo": ["proyectos.objetivo"],
+    "presupuesto": ["proyectos.presupuesto"],
+    "duracion": ["proyecto_subvencionable.duracion", "proyecto_redes.duracion", "proyectos.duracion"],
+    "impacto_esperado": ["proyectos.impacto_esperado"],
+    "productos_resultantes": ["proyectos.productos_resultantes"],
+    "indicadores_exito": ["proyectos.indicadores"],
+
+    "estado_proyecto": ["proyectos.estado", "proyecto_redes.estado", "proyecto_subvencionable.estado"],
+    "fecha_inicio_proyecto": ["proyecto_subvencionable.fecha_inicio", "proyectos.fecha_inicio", "proyecto_redes.fecha_inicio_estimada"],
+    "fecha_fin_estimada_proyecto": ["proyecto_subvencionable.fecha_fin_estimada", "proyectos.fecha_fin_estimada", "proyecto_redes.fecha_fin_estimada"],
+
+    "sector_productivo": ["proyecto_subvencionable.sector_productivo", "proyecto_redes.sector_productivo"],
+    "antecedentes": ["proyecto_subvencionable.antecedentes", "proyecto_redes.antecedentes"],
+    "difusion_resultados": ["proyecto_subvencionable.difusion_resultados", "proyecto_redes.difusion_resultados"],
+    "estrategia_mercado": ["proyecto_subvencionable.estrategia_mercado", "proyecto_redes.estrategia_mercado"],
+    "grado_innovacion": ["proyecto_subvencionable.grado_innovacion", "proyecto_redes.grado_innovacion"],
+    "calidad_metodologia": ["proyecto_subvencionable.calidad_metodologia", "proyecto_redes.calidad_metodologia"],
+    "planificacion": ["proyecto_subvencionable.planificacion", "proyecto_redes.planificacion"],
+    "estructura_trabajo": ["proyecto_subvencionable.estructura_trabajo", "proyecto_redes.estructura_trabajo"],
+
+    "colaboraciones_resumen": ["proyecto_redes.colaboraciones"],
+    "actividades_diffusion_resumen": ["proyecto_redes.actividades_diffusion", "proyecto_subvencionable.actividades_diffusion"],
+    "financiacion_propuesta": ["proyecto_redes.financiacion_propuesta"],
+    "riesgos_resumen": ["proyecto_redes.riesgos"],
+    "plan_de_riesgos": ["proyecto_redes.plan_de_riesgos"]
   }
 }

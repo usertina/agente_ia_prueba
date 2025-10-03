@@ -1288,7 +1288,7 @@ if __name__ == "__main__":
     """Punto de entrada para ejecutar la aplicación"""
     
     # Configuración de puerto y host
-    port = int(os.environ.get("PORT", 3000))
+    port = int(os.environ.get("PORT", 8000))
     host = "0.0.0.0"  # Importante para Render
     
     # Detectar entorno

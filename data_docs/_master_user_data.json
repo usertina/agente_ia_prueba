@@ -2,7 +2,7 @@
   "_metadata": {
     "version": "1.0",
     "created": "2025-10-01T11:02:47.602828",
-    "last_updated": "2025-10-01T11:02:47.602868",
+    "last_updated": "2025-10-03T12:00:00",
     "description": "Base de datos maestra del usuario/empresa"
   },
   "empresa": {
@@ -118,5 +118,26 @@
       "Posibles retrasos en el proceso de validación debido a las exigencias regulatorias."
     ],
     "plan_de_riesgos": "Identificación temprana de fallos en la cadena de suministro, contactos estrechos con organismos reguladores para una validación más rápida, y diseño de estrategias de mitigación ante posibles retrasos técnicos."
-  }
+  },
+  "proyecto_subvencionable": {
+    "antecedentes": "",
+    "descripcion_general": "",
+    "difusion_resultados": "",
+    "estrategia_mercado": "",
+    "grado_innovacion": "",
+    "calidad_metodologia": "",
+    "planificacion": "",
+    "duracion": "",
+    "estructura_trabajo": "",
+    "fecha_inicio": "",
+    "fecha_fin_estimada": "",
+    "actividades_diffusion": [
+      {
+        "id": "",
+        "tipo_actuacion": "",
+        "descripcion": ""
+      }
+    ]
+  },
+  "custom": {}
 }

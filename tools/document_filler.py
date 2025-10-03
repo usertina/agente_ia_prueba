@@ -476,6 +476,11 @@ class DocumentFiller:
         # Obtener mapeo apropiado
         if template_name:
             mapping_config = self.detect_mapping_for_template(template_name)
+
+        # dentro de smart_field_mapping
+        if field_name.endswith("_resumen"):
+            return self.format_list_field(field_name.replace("_resumen", ""))
+    
         else:
             mapping_config = self.default_mapping
         
@@ -501,6 +506,26 @@ class DocumentFiller:
             return self.user_database['custom'][field_name]
         
         return None
+    
+    def format_list_field(self, field_name: str, separator: str = "\n") -> str:
+        """Convierte listas de diccionarios o strings en texto plano para plantillas"""
+        value = self.get_nested_value(field_name)
+        if not value:
+            return ""
+
+        if isinstance(value, list):
+            items = []
+            for i, v in enumerate(value, 1):
+                if isinstance(v, dict):
+                    # Combina todos los valores del diccionario
+                    item_text = ", ".join(f"{k}: {val}" for k, val in v.items())
+                    items.append(f"{i}. {item_text}")
+                else:
+                    items.append(f"{i}. {v}")
+            return separator.join(items)
+        
+        return str(value)
+
     
     def format_composite_field(self, template: str) -> str:
         """Formatea campos compuestos"""
